@@ -9,10 +9,10 @@
 int currentPID = 0;
 int globalTime = 0;
 int fileNumber = 1;
-double deltaCputime = 0.1;
+double deltaCputime = 1.0;
 
 
-int readFromFile(int *niceness, double *proctime, int fileNumber) {
+int readFromFile(double *proctime, int *niceness, int fileNumber) {
     FILE *fp1;
 
     char fileName[100];
@@ -25,8 +25,8 @@ int readFromFile(int *niceness, double *proctime, int fileNumber) {
         printf("File %s doesn't exist.\n", fileName);
 		return 0;
     } else {
-        fscanf(fp1, "%d %lf", niceness, proctime);
-        printf("Read from file %s: Niceness: %d, Proctime: %.2f\n", fileName, *niceness, *proctime);
+        fscanf(fp1, "%lf %d", proctime, niceness);
+        printf("Read from file %s: Proctime: %.2f, Niceness: %d\n", fileName, *proctime, *niceness);
         fclose(fp1);
 		return 1;
     }
@@ -34,10 +34,11 @@ int readFromFile(int *niceness, double *proctime, int fileNumber) {
 
 // Function to print all entries to a file with the desired format
 void printAllEntriesToFile(FILE* file, EntryList* entryList) {
+
     Entry* current = entryList->head;
 
     while (current != NULL) {
-        fprintf(file, "%d, %d, %d, %d, %.2f, %.2f\n",
+        fprintf(file, "//Time, PID, Status, Niceness, Cputime, Proctime\n%d, %d, %d, %d, %.2f, %.2f\n",
                 globalTime, current->pid, current->status, current->niceness,
                 current->cputime, current->proctime);
         current = current->next;
@@ -45,18 +46,22 @@ void printAllEntriesToFile(FILE* file, EntryList* entryList) {
 }
 
 // Function to log the state of queues to a file
-void logState(FILE* logFile, int time, EntryList* readyQueue, EntryList* runningQueue) {
+void logState(FILE* logFile, EntryList* readyQueue, EntryList* runningQueue) {
     printAllEntriesToFile(logFile, readyQueue);
     printAllEntriesToFile(logFile, runningQueue);
 
     fprintf(logFile, "\n");
 }
 
+
+
 // Function to simulate the process execution cycle
 void processSimulator() {
     EntryList* readyQueue = initialize();
     EntryList* runningQueue = initialize();
     EntryList* completeQueue = initialize();
+
+
 
     FILE* logFile = fopen("../log/log-01-19-24.txt", "w");
     if (logFile == NULL) {
@@ -67,19 +72,27 @@ void processSimulator() {
     printf("Simulation started.\n");
 
     do {
+
+        //int flag = 0;
+
+        logState(logFile, readyQueue, runningQueue);
+
+        // Increment the global time for each cycle
+        globalTime ++;
         printf("Cycle %d\n", globalTime);
 
         // Read from files and add processes to readyQueue
         int niceness;
         double proctime;
-        if (readFromFile(&niceness, &proctime, fileNumber)!= 0) {
+        if (readFromFile(&proctime, &niceness, fileNumber)!= 0) {
             Entry* newEntry = createEntry(++currentPID, READY, niceness, 0.0, proctime);
             pushEntry(readyQueue, newEntry);
             fileNumber++;
         }
 
-		printf("After reading files. Ready queue size: %d, Running queue size: %d\n", readyQueue->size, runningQueue->size);
+		//printf("After reading files. Ready queue size: %d, Running queue size: %d\n", readyQueue->size, runningQueue->size);
 
+    
         // Process all ready processes
         if (runningQueue->size == 0) {
             Entry* readyProcess = popEntry(readyQueue);
@@ -87,29 +100,34 @@ void processSimulator() {
             pushEntry(runningQueue, readyProcess);
         }
 
-		printf("After processing ready queue. Ready queue size: %d, Running queue size: %d\n", readyQueue->size, runningQueue->size);
         // Update running processes
-        Entry* runningProcess = popEntry(runningQueue);
+
+        Entry* runningProcess = runningQueue->head;
+
         if (runningProcess != NULL) {
             runningProcess->cputime += deltaCputime;  // Increment CPU time
 
             if (runningProcess->cputime >= runningProcess->proctime) {
                 // Process is complete
-                runningProcess->status = COMPLETE;  // Move to complete state
-                pushEntry(completeQueue, runningProcess);
-            } else {
-                // Process still running, push back to running queue
-                pushEntry(runningQueue, runningProcess);
-            }
+                Entry* completeProcess = popEntry(runningQueue);
+                completeProcess->status = COMPLETE;
+                pushEntry(completeQueue, completeProcess);
+            } 
+        
+                
         }
 
         // Log the state of queues to the file
-        logState(logFile, globalTime, readyQueue, runningQueue);
-		printf("Logged in\n");
+        
+        //logState(logFile, readyQueue, runningQueue);
+        //printAllEntries(readyQueue);
+	    printf("Logged in\n");
 
-        // Increment the global time for each cycle
-        globalTime++;
     } while (!(readyQueue->size == 0 && runningQueue->size == 0));
+    
+
+    printAllEntriesToFile(logFile, completeQueue);
+    
 
 
     printf("Simulation completed.\n");

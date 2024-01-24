@@ -120,15 +120,24 @@ void pushEntry(EntryList* entryList, Entry* newEntry){
 		//Check if the list is empty
 		if(entryList->size == 0){
 			entryList->head    = newEntry;
-			entryList->size++;;
+			entryList->size++;
 		}
 		//Check if the list is less or equal to 100
 		else if(entryList->size <= 100){
 
 		// Set values for newEntry and place it to head of linked list
-			newEntry->next  = entryList->head;
-			entryList->head = newEntry;
-			entryList->size++;
+			//newEntry->next  = entryList->head;
+			//entryList->head = newEntry;
+			//entryList->size++;
+			Entry* current = entryList->head;
+			while (current != NULL){
+				if (current->next == NULL){
+					current->next = newEntry;
+					newEntry->next = NULL;
+				}
+				current = current->next;
+			}
+			entryList->size ++;
 		}
 		else{
 			return;
@@ -145,7 +154,7 @@ void pushEntry(EntryList* entryList, Entry* newEntry){
 
 /**@brief Popping an entry from the list
   *@param entryList
-  *@return none
+  *@return 
  */
 Entry* popEntry(EntryList* entryList){
 
