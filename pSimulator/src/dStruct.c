@@ -42,6 +42,29 @@ void destroy(EntryList* entryList){
 	free(entryList); //Free the entry list structure
 }
 
+/**@brief Creating a new entry
+  *@param pid, status, niceness, cputime, proctime
+  *@return Entry
+  */
+Entry* createEntry(int pid, int status, int niceness, double cputime, double proctime){
+        Entry* newEntry = (Entry*)malloc(sizeof(Entry));
+
+        if (newEntry != NULL) {
+                newEntry->pid = pid;
+                newEntry->status = status;
+                newEntry->niceness = niceness;
+                newEntry->cputime = cputime;
+                newEntry->proctime = proctime;
+                newEntry->next = NULL;
+
+                return newEntry;
+        } else {
+                printf("Failed to create entry.\n");
+                return NULL;
+        }
+}
+
+
 /**@brief Getting an entry in by pid
   *@param entryList, pid
   *@return current or NULL
@@ -90,38 +113,24 @@ void setEntry(EntryList* entryList, int pid, int status, int niceness, double cp
   *@param entryList, pid, status, niceness, cputime, proctime
   *@return none
  */ 
-void pushEntry(EntryList* entryList, int pid, int status, int niceness, double cputime, double proctime){
-	// Allocating memory for new entry
-	Entry* newEntry = (Entry*)malloc(sizeof(Entry));	
-	
+void pushEntry(EntryList* entryList, Entry* newEntry){	
 	// Check to see if allocating memory is successful and 
 	//		if list can hold at most 100 entries
 	if(newEntry != NULL){
 		//Check if the list is empty
 		if(entryList->size == 0){
 			entryList->head    = newEntry;
-			newEntry->pid      = pid;
-			newEntry->status   = status;
-			newEntry->niceness = niceness;
-			newEntry->cputime  = cputime;
-			newEntry->proctime = proctime;
-			entryList->size++;
+			entryList->size++;;
 		}
 		//Check if the list is less or equal to 100
 		else if(entryList->size <= 100){
-		// Set values for newEntry and place it to head of linked list
-			newEntry->pid      = pid;
-			newEntry->status   = status;
-			newEntry->niceness = niceness;
-			newEntry->cputime  = cputime;
-			newEntry->proctime = proctime;
 
+		// Set values for newEntry and place it to head of linked list
 			newEntry->next  = entryList->head;
 			entryList->head = newEntry;
 			entryList->size++;
 		}
 		else{
-			printf("The Size exceeded 100.\n");
 			return;
 
 		}
@@ -138,19 +147,20 @@ void pushEntry(EntryList* entryList, int pid, int status, int niceness, double c
   *@param entryList
   *@return none
  */
-void popEntry(EntryList* entryList){
+Entry* popEntry(EntryList* entryList){
 
 	// Check to see if the linked list is not empty to pop
 	if(entryList->size != 0){
 		Entry* poppedEntry = entryList->head;
 		entryList->head = entryList->head->next;
-		free(poppedEntry);
 		entryList->size--;
+		return poppedEntry;
 
 	}
 	else{ 
 		// Empty linked list
 		printf("Unable to pop an empty linked list.\n");
+		return NULL;
 	}
 }
 

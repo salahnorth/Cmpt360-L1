@@ -31,13 +31,15 @@ EntryList* initialize();
 
 void destroy(EntryList* entryList);
 
+Entry* createEntry(int pid, int status, int niceness, double cputime, double proctime);
+
 Entry* getEntry(EntryList* entryList, int pid, int index);
 
 void setEntry(EntryList* entryList, int pid, int status, int niceness, double cputime, double proctime);
 
-void pushEntry(EntryList* entryList, int pid, int status, int niceness, double cputime, double proctime);
+void pushEntry(EntryList* entryList, Entry* newEntry);
 
-void popEntry(EntryList* entryList);
+Entry* popEntry(EntryList* entryList);
 
 double getCputime(EntryList* entryList, int pid);
 
