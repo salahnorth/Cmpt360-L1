@@ -134,10 +134,11 @@ void pushEntry(EntryList* entryList, Entry* newEntry){
 				if (current->next == NULL){
 					current->next = newEntry;
 					newEntry->next = NULL;
+					entryList->size ++;
+					break;
 				}
 				current = current->next;
 			}
-			entryList->size ++;
 		}
 		else{
 			return;
