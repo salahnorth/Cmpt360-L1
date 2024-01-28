@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "dStruct.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+
 
 #define READY 1
 #define RUNNING 2
@@ -48,6 +51,8 @@ int readFromFile(double *proctime, int *niceness, int fileNumber, int finProcFil
 void moveProcessedFile(int fileNumber) {
     char sourceFileName[100];
     char destinationFileName[100];
+
+    mkdir("../finProc"); // Create the finProc folder
 
     snprintf(sourceFileName, sizeof(sourceFileName), "../newProc/file%d.txt", fileNumber);
     snprintf(destinationFileName, sizeof(destinationFileName), "../finProc/file%d.txt", fileNumber);
