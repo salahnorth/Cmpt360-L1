@@ -401,18 +401,30 @@ void swapEntries(Entry* entry1, Entry* entry2){
     int tempNiceness = entry1->niceness;
     double tempCputime = entry1->cputime;
     double tempProctime = entry1->proctime;
+    double tempArrivaltime = entry1->arrivaltime;
+    double tempTurnaroundtime = entry1->turnaroundtime;
+    double tempResponsetime = entry1->responsetime;
+    double tempFirstexecFlag = entry1->firstexecFlag;
     
     entry1->pid = entry2->pid;
     entry1->status = entry2->status;
     entry1->niceness = entry2->niceness;
     entry1->cputime = entry2->cputime;
     entry1->proctime = entry2->proctime;
+    entry1->arrivaltime = entry2->arrivaltime;
+    entry1->turnaroundtime = entry2->turnaroundtime;
+    entry1->responsetime = entry2->responsetime;
+    entry1->firstexecFlag = entry2->firstexecFlag;
     
     entry2->pid = tempPid;
     entry2->status = tempStatus;
     entry2->niceness = tempNiceness;
     entry2->cputime = tempCputime;
     entry2->proctime = tempProctime;
+    entry2->arrivaltime = tempArrivaltime;
+    entry2->turnaroundtime = tempTurnaroundtime;
+    entry2->responsetime = tempResponsetime;
+    entry2->firstexecFlag = tempFirstexecFlag;
 }
 
 void selectionSortByProctime(EntryList* entryList){

@@ -15,7 +15,7 @@
 #define ALGOR_RR 3
 
 #define TIME_JIFFY 2
-#define TIME_DT 0.5
+#define TIME_DT 0.001
 
 #define SOURCE_DIR "../newProc/"
 #define BACKUP_DIR "../files-to-copy-into-newProc-after-deleting/"
@@ -183,7 +183,7 @@ void printAllEntriesToFile(FILE* file, EntryList* entryList){
     Entry* current = entryList->head;
 
     while(current != NULL){
-        fprintf(file, "%.2f, %d, %d, %d, %.2f, %.2f\n",
+        fprintf(file, "%.4f, %d, %d, %d, %.4f, %.4f\n",
                 globalTime, current->pid, current->status, current->niceness,
                 current->cputime, current->proctime);
         current = current->next;
@@ -208,7 +208,7 @@ void printProcessTimesToFile(FILE* file, EntryList* completeQueue){
     Entry* current = completeQueue->head;
     
     while(current != NULL){
-        fprintf(file, "%d, %.2lf, %.2lf, %.2f\n", current->pid, current->turnaroundtime, current->responsetime, current->arrivaltime);
+        fprintf(file, "%d, %.4lf, %.4lf, %.4f\n", current->pid, current->turnaroundtime, current->responsetime, current->arrivaltime);
         current = current->next;
     }
 }
@@ -488,6 +488,8 @@ void SJFProcessSimulator(){
     double responsetime = globalTime;
     
     int firstexecflag = 0; // Flag to indicate if a process is executing for the first time
+    
+    int runFlag = 0;
 
     // Open log files to record simulated results
     FILE* logFile = fopen("../log/SJFLog.txt", "w");
@@ -509,6 +511,7 @@ void SJFProcessSimulator(){
     }
 
     printf("Simulation started.\n");
+   
 
     do{
 
@@ -522,13 +525,20 @@ void SJFProcessSimulator(){
             Entry* newEntry = createEntry(++currentPID, READY, niceness, cputime, proctime, arrivaltime, turnaroundtime, responsetime, firstexecflag);
             pushEntry(readyQueue, newEntry);
             newEntry->arrivaltime += globalTime; // Increment arrivaltime for the next process
+            
         }
         
-        selectionSortByProctime(readyQueue); // Sort the ready queue in ascending order for SJF algorithm
+        if (readyQueue->size >= 2){
+            selectionSortByProctime(readyQueue); // Sort the ready queue in ascending order for SJF algorithm
+            runFlag = 1;
+        }
+        
+        
+        //printAllEntries(readyQueue);
          	
    
         // Process all ready processes
-        if(runningQueue->size == 0){
+        if(runningQueue->size == 0 && runFlag == 1){
         
             // Fetch the process from the readyQueue if the runningQueue is empty, then execute it
 	    Entry* readyProcess = popEntry(readyQueue);
@@ -613,7 +623,7 @@ void runSimulation(int algorithm){
 int main(void){
 
     //runSimulation(ALGOR_FIFO);
-    runSimulation(ALGOR_RR);
+    runSimulation(ALGOR_SJF);
 
     return(0);
 }
