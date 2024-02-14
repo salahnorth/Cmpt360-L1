@@ -3,194 +3,510 @@
 #include "dStruct.h"
 #include <sys/types.h>
 #include <sys/stat.h>
-
+#include <dirent.h>
+#include <string.h>
 
 #define READY 1
 #define RUNNING 2
 #define COMPLETE 3
 
+#define ALGOR_FIFO 1
+#define ALGOR_SJF 2
+#define ALGOR_RR 3
+
+#define TIME_JIFFY 2
+#define TIME_DT 1.0
+
+
+/**
+  *@file procSim.c
+  *@brief This file sets up a process simulator
+  *@author Salah Mohamed & Vy Tran
+  *@date 04022024
+  *@version 9
+ */
+
 int currentPID = 0;
-int globalTime = 0;
+double globalTime = 0.0;
 int fileNumber = 1;
-int finProcFileNumber = 1;
-double deltaCputime = 1.0;
+double quantumCounter = 0.0;
+//double deltaCputime = 0.1;
 
+/**
+  *@brief Check if the file is regular
+  *@param filePath
+  *@return 1 or 0
+  */
 
-int readFromFile(double *proctime, int *niceness, int fileNumber, int finProcFileNumber) {
-    FILE *fp1;
+int isRegularFile(char* filePath) {
+    struct stat fileStat;
 
-    char fileName[100];
-
-    // Try to read from newProc folder first
-    snprintf(fileName, sizeof(fileName), "../newProc/file%d.txt", fileNumber);
-    fp1 = fopen(fileName, "r");
-
-    if (fp1 == NULL) {
-        // If file not found in newProc, try finProc
-        snprintf(fileName, sizeof(fileName), "../finProc/file%d.txt", finProcFileNumber);
-        fp1 = fopen(fileName, "r");
-
-        if (fp1 == NULL) {
-            printf("No more files to process.\n");
-            return 0;
-        } else {
-            finProcFileNumber++;
+    if(stat(filePath, &fileStat) == 0){
+        if(S_ISREG(fileStat.st_mode)){
+            return(1);
+        } 
+	else{
+            return(0);
         }
-    } else {
-        fileNumber++;
     }
+    return(0);
+}
 
-    // Rest of the function remains the same
-    fscanf(fp1, "%lf %d", proctime, niceness);
-    printf("Read from file %s: Proctime: %.2f, Niceness: %d\n", fileName, *proctime, *niceness);
-    fclose(fp1);
-    return 1;
+/**
+  *@brief Reading the input files to extract proctime and niceness values
+  *@param path, proctime, niceness
+  *@return 1 or 0
+  */
+
+int readFromFile(const char *path, double *proctime, int *niceness){
+	struct dirent *entry;
+ 	DIR *dp;
+	
+	dp = opendir(path);
+  	if(dp == NULL){
+		perror("opendir");
+		return(0);
+       	}
+	
+	while((entry = readdir(dp))){
+		FILE *fp;
+		
+		if(entry->d_name[0] == '.'){
+			continue;
+       	 	}
+
+		char *filePath = (char*) malloc(strlen(path) + strlen(entry->d_name)); 
+	
+		filePath = strcpy(filePath, path);
+		strcat(filePath, entry->d_name);
+		
+		if(isRegularFile(filePath) == 1){
+			fp = fopen(filePath, "r");
+			
+			if(fp == NULL){
+				printf("Unable to read file\n");
+			}
+			else{
+                   		fscanf(fp, "%lf %d", proctime, niceness);
+                    		printf("Read from file %s: Proctime: %.2f, Niceness: %d\n", entry->d_name, *proctime, *niceness);
+                    		fclose(fp);
+				// Deleting the file after reading
+				if(remove(filePath) == 0){
+                	        	printf("Removed file: %s\n", filePath);
+			    	} 
+			    	else{
+                        		perror("Error removing file");
+                   		}
+                    		free(filePath);
+                    		return(1);
+           		 }
+        	}
+    	}
+	closedir(dp);
+	return(0);                       
 }
 
 
-void moveProcessedFile(int fileNumber) {
-    char sourceFileName[100];
-    char destinationFileName[100];
-
-    mkdir("../finProc"); // Create the finProc folder
-
-    snprintf(sourceFileName, sizeof(sourceFileName), "../newProc/file%d.txt", fileNumber);
-    snprintf(destinationFileName, sizeof(destinationFileName), "../finProc/file%d.txt", fileNumber);
-
-    if (rename(sourceFileName, destinationFileName) == 0) {
-        printf("Moved file %s to %s\n", sourceFileName, destinationFileName);
-    } else {
-        printf("Error moving file %s to %s\n", sourceFileName, destinationFileName);
-    }
-}
-
-
-// Function to print all entries to a file with the desired format
-void printAllEntriesToFile(FILE* file, EntryList* entryList) {
+/**
+  *@brief Print all the entries to a file
+  *@param file, EntryList
+  *@return none
+  */
+  
+void printAllEntriesToFile(FILE* file, EntryList* entryList){
 
     Entry* current = entryList->head;
 
-    while (current != NULL) {
-        fprintf(file, "%d, %d, %d, %d, %.2f, %.2f\n",
+    while(current != NULL){
+        fprintf(file, "%.2f, %d, %d, %d, %.2f, %.2f\n",
                 globalTime, current->pid, current->status, current->niceness,
                 current->cputime, current->proctime);
         current = current->next;
     }
-    //printEntryByPid(entryList, 3);
+
 }
 
-// Function to log the state of queues to a file
-void logState(FILE* logFile, EntryList* readyQueue, EntryList* runningQueue) {
-    //fprintf(logFile, "Ready Queue:\n");
+/**
+  *@brief Log the state of queues to a file
+  *@param logFile, readyQueue, runningQueue
+  *@return none
+  */
+void logState(FILE* logFile, EntryList* readyQueue, EntryList* runningQueue){
     printAllEntriesToFile(logFile, readyQueue);
     fprintf(logFile, "\n");
 
-    //fprintf(logFile, "\nRunning Queue:\n");
     printAllEntriesToFile(logFile, runningQueue);
-
     fprintf(logFile, "\n\n");
 }
 
-void writeCompleteLog(FILE* logFile, EntryList* completeQueue) {
-    printAllEntriesToFile(logFile, completeQueue);
+void printProcessTimesToFile(FILE* file, EntryList* completeQueue){
+    Entry* current = completeQueue->head;
+    
+    while(current != NULL){
+        fprintf(file, "%d, %.2lf, %.2lf, %.2lf\n", current->pid, current->turnaroundtime, current->responsetime, current->arrivaltime);
+        current = current->next;
+    }
 }
 
-// Function to simulate the process execution cycle
-void processSimulator() {
-    EntryList* readyQueue = initialize();
-    EntryList* runningQueue = initialize();
+/**
+  *@brief Write the final times when the whole process is completed
+  *@param logFile, completeQueue
+  *@return none
+  */
+void writeCompleteLog(FILE* logFile, EntryList* completeQueue){
+    printAllEntriesToFile(logFile, completeQueue);
+    fprintf(logFile, "\n");
+    printProcessTimesToFile(logFile, completeQueue);
+}
+
+
+/**
+  *@brief Simulate the process executiong cycle
+  *@param none
+  *@return none
+  */
+  
+void FIFOProcessSimulator(){
+    // Initializing the queues
+    EntryList* readyQueue    = initialize();
+    EntryList* runningQueue  = initialize();
     EntryList* completeQueue = initialize();
+    
+    // Initially set the time variables to 0 (start of global time) 
+    double cputime = globalTime;
+    double arrivaltime = globalTime;
+    double turnaroundtime = globalTime;
+    double responsetime = globalTime;
+    
+    int firstexecflag = 0; // Flag to indicate if a process is executing for the first time
 
-
-
-    FILE* logFile = fopen("../log/log-01-19-24.txt", "w");
-    if (logFile == NULL) {
+    // Open log files to record simulated results
+    FILE* logFile = fopen("../log/FIFOLog.txt", "w");
+    if(logFile == NULL){
         printf("Error opening log file.\n");
         return;
     }
 
-    FILE* CompleteLogFile = fopen("../log/CompleteLog-01-19-24.txt", "w");
-    if (CompleteLogFile == NULL) {
+    FILE* CompleteLogFile = fopen("../log/FIFOCompleteLog.txt", "w");
+    if(CompleteLogFile == NULL){
         printf("Error opening complete log file.\n");
         return;
     }
 
     printf("Simulation started.\n");
 
-    do {
-
-        //int flag = 0;
-
-        // Increment the global time for each cycle
-        globalTime ++;
-        //fprintf(logFile, "===Cycle %d=== \n", globalTime);
+    do{
 
         // Read from files and add processes to readyQueue
         int niceness;
         double proctime;
-        while (readFromFile(&proctime, &niceness, fileNumber, finProcFileNumber)!= 0) {
-            Entry* newEntry = createEntry(++currentPID, READY, niceness, 0.0, proctime);
+        char* path = "../newProc/";
+        if(readFromFile(path, &proctime, &niceness)!= 0){
+        
+            // Create a new process entry and add it to readyQueue
+            Entry* newEntry = createEntry(++currentPID, READY, niceness, cputime, proctime, arrivaltime, turnaroundtime, responsetime, firstexecflag);
             pushEntry(readyQueue, newEntry);
-            moveProcessedFile(fileNumber); // Move the file to finProc folder
-            fileNumber++;
-            finProcFileNumber++;
-
+            arrivaltime = globalTime; // Increment arrivaltime for the next process
         }
 
-    
         // Process all ready processes
-        if (runningQueue->size == 0) {
-            Entry* readyProcess = popEntry(readyQueue);
-            Entry* readProcess = createEntry(readyProcess->pid, readyProcess->status, readyProcess->niceness, readyProcess->cputime, readyProcess->proctime);
-            
-            if (readProcess != NULL){
-                readProcess->status = RUNNING;  // Move to running state
-                pushEntry(runningQueue, readProcess);
-            }
-            
+        if(runningQueue->size == 0){
+        
+            // Fetch the process from the readyQueue if the runningQueue is empty, then execute it
+	    Entry* readyProcess = popEntry(readyQueue);
+	    readyProcess->responsetime = globalTime - readyProcess->arrivaltime; // Calculate response time
+		
+
+		if(readyProcess != NULL){
+		
+		    // Calculate response time for the process if its their first time exectuing
+                    if (readyProcess->firstexecFlag == 0){
+		        readyProcess->responsetime = globalTime - readyProcess->arrivaltime; // Calculate response time
+		        readyProcess->firstexecFlag += 1; // Set the flag to 1 to indicate first execution
+		    }
+		
+
+		    readyProcess->status = RUNNING; // Move to running state
+		    pushEntry(runningQueue, readyProcess);
+            	} 
         }
+        
+        // Increment the global time for each cycle
+        globalTime += TIME_DT; 
 
         // Update running processes
-
         Entry* runningProcess = runningQueue->head;
 
-        if (runningProcess != NULL) {
-            runningProcess->cputime += deltaCputime;  // Increment CPU time
-
-            if (runningProcess->cputime >= runningProcess->proctime) {
-                // Process is complete
-                Entry* completeProcess = popEntry(runningQueue);
-                completeProcess->status = COMPLETE;
-                pushEntry(completeQueue, completeProcess);
-
-                
-            } 
-        
-                
+        if(runningProcess != NULL){
+	    runningProcess->cputime += TIME_DT;
+		
+	    // Check if the process has completed execution
+	    if(runningProcess->cputime >= runningProcess->proctime){
+	    
+	        // If the process is complete, move it to the completeQueue and calculate turnaroundtime
+	        Entry* completeProcess = popEntry(runningQueue);
+		completeProcess->status = COMPLETE;
+		completeProcess->turnaroundtime = globalTime - completeProcess->arrivaltime; // Calculate turnaround time
+		pushEntry(completeQueue, completeProcess);
+            }
         }
 
         // Log the state of queues to the file
         logState(logFile, readyQueue, runningQueue);
-	    printf("Logged in\n");
 
-    } while (!(readyQueue->size == 0 && runningQueue->size == 0));
+    }while(!(readyQueue->size == 0 && runningQueue->size == 0));
     
-    writeCompleteLog(CompleteLogFile, completeQueue); // Write a separate log file for the complete queue
+    // Write a separate log file for the complete queue
+    writeCompleteLog(CompleteLogFile, completeQueue);    
+
+    printf("\nFIFO Simulation completed.\n");
+    printf("End of simulation loop. Ready queue size: %d, Running queue size: %d\n\n", readyQueue->size, runningQueue->size);
     
-
-
-    printf("Simulation completed.\n");
-
-	printf("End of simulation loop. Ready queue size: %d, Running queue size: %d\n", readyQueue->size, runningQueue->size);
-
+    // Close log files and clean up memory
     fclose(logFile);
+    fclose(CompleteLogFile);
+
+    destroy(readyQueue);
+    destroy(runningQueue);
+    destroy(completeQueue);
+}
+
+void roundRobinProcessSimulator(){
+
+    // Initializing the queues
+    EntryList* readyQueue    = initialize();
+    EntryList* runningQueue  = initialize();
+    EntryList* completeQueue = initialize();
+    
+    // Initially set the time variables to 0 (start of global time) 
+    double cputime = globalTime;
+    double arrivaltime = globalTime;
+    double turnaroundtime = globalTime;
+    double responsetime = globalTime;
+    
+    int firstexecflag = 0; // Flag to indicate if a process is executing for the first time
+    int quantumCounter = 0; // Counter for quantum comparison
+
+    // Open log files to record simulated results
+    FILE* logFile = fopen("../log/roundrobinLog.txt", "w");
+    if(logFile == NULL){
+        printf("Error opening log file.\n");
+        return;
+    }
+
+    FILE* CompleteLogFile = fopen("../log/roundrobinCompleteLog.txt", "w");
+    if(CompleteLogFile == NULL){
+        printf("Error opening complete log file.\n");
+        return;
+    }
+
+    printf("Simulation started.\n");
+
+    do{
+
+        // Read from files and add processes to readyQueue
+        int niceness;
+        double proctime;
+        char* path = "../newProc/";
+        
+        if(readFromFile(path, &proctime, &niceness)!= 0){
+        
+            // Create a new process entry and add it to readyQueue
+            Entry* newEntry = createEntry(++currentPID, READY, niceness, cputime, proctime, arrivaltime, turnaroundtime, responsetime, firstexecflag);
+            pushEntry(readyQueue, newEntry);
+            arrivaltime = globalTime; // Increment arrivaltime for the next process
+        }
+         	
+        // Process all ready processes
+        if(runningQueue->size == 0){
+        
+            // Fetch the process from the readyQueue if the runningQueue is empty, then execute it
+	    Entry* readyProcess = popEntry(readyQueue);
+	    if(readyProcess != NULL){
+		
+		// Calculate response time for the process if its their first time exectuing
+                if (readyProcess->firstexecFlag == 0){
+		    readyProcess->responsetime = globalTime - readyProcess->arrivaltime; // Calculate response time
+		    readyProcess->firstexecFlag = 1; // Set the flag to 1 to indicate first execution
+		}
+
+		readyProcess->status = RUNNING; // Move to running state
+		pushEntry(runningQueue, readyProcess);
+            } 
+        }
+        
+        // Increment the global time for each cycle
+        globalTime += TIME_DT; 
+
+        // Update running processes
+        Entry* runningProcess = runningQueue->head;
+
+        if(runningProcess != NULL){
+	    runningProcess->cputime += TIME_DT;
+	    quantumCounter += TIME_DT;
+		
+	    // Check if the process has completed execution
+	    if(runningProcess->cputime >= runningProcess->proctime){
+		
+		// If the process is complete, move it to the completeQueue and calculate turnaroundtime
+	        Entry* completeProcess = popEntry(runningQueue);
+		completeProcess->status = COMPLETE;
+		completeProcess->turnaroundtime = globalTime - completeProcess->arrivaltime; // Calculate turnaround time
+		pushEntry(completeQueue, completeProcess);
+		
+	      // If quantum time elapsed and process is not complete, preempt the process
+            } else if(quantumCounter == TIME_JIFFY && runningProcess->cputime < runningProcess->proctime){
+            	Entry* preemptedProcess = popEntry(runningQueue);
+            	    
+            	preemptedProcess->status = READY;  // Move the process back to the readyQueue
+            	pushEntry(readyQueue, preemptedProcess);
+            	quantumCounter = 0; // Reset the quantum counter
+            }
+        }
+
+        // Log the state of queues to the file
+        logState(logFile, readyQueue, runningQueue);  
+	
+
+    }while(!(readyQueue->size == 0 && runningQueue->size == 0));
+    
+    // Write a separate log file for the complete queue
+    writeCompleteLog(CompleteLogFile, completeQueue);    
+
+    printf("\nRound Robin Simulation completed.\n");
+    printf("End of simulation loop. Ready queue size: %d, Running queue size: %d\n\n", readyQueue->size, runningQueue->size);
+    
+    // Close log files and clean up memory
+    fclose(logFile);
+    fclose(CompleteLogFile);
     destroy(readyQueue);
     destroy(runningQueue);
     destroy(completeQueue);
 }
 
 
-int main() {
-    processSimulator();
-    return 0;
+void SJFProcessSimulator(){
+
+    // Initializing the queues
+    EntryList* readyQueue    = initialize();
+    EntryList* runningQueue  = initialize();
+    EntryList* completeQueue = initialize();
+    
+    // Initially set the time variables to 0 (start of global time) 
+    double cputime = globalTime;
+    double arrivaltime = globalTime;
+    double turnaroundtime = globalTime;
+    double responsetime = globalTime;
+    
+    int firstexecflag = 0; // Flag to indicate if a process is executing for the first time
+
+    // Open log files to record simulated results
+    FILE* logFile = fopen("../log/SJFLog.txt", "w");
+    if(logFile == NULL){
+        printf("Error opening log file.\n");
+        return;
+    }
+
+    FILE* CompleteLogFile = fopen("../log/SJFCompleteLog.txt", "w");
+    if(CompleteLogFile == NULL){
+        printf("Error opening complete log file.\n");
+        return;
+    }
+
+    printf("Simulation started.\n");
+
+    do{
+
+        // Read from files and add processes to readyQueue
+        int niceness;
+        double proctime;
+        char* path = "../newProc/";
+        if(readFromFile(path, &proctime, &niceness)!= 0){
+        
+            // Create a new process entry and add it to readyQueue
+            Entry* newEntry = createEntry(++currentPID, READY, niceness, cputime, proctime, arrivaltime, turnaroundtime, responsetime, firstexecflag);
+            pushEntry(readyQueue, newEntry);
+            arrivaltime = globalTime; // Increment arrivaltime for the next process
+        }
+        
+        selectionSortByProctime(readyQueue); // Sort the ready queue in ascending order for SJF algorithm
+         	
+   
+        // Process all ready processes
+        if(runningQueue->size == 0){
+        
+            // Fetch the process from the readyQueue if the runningQueue is empty, then execute it
+	    Entry* readyProcess = popEntry(readyQueue);
+	    readyProcess->responsetime = globalTime - readyProcess->arrivaltime; // Calculate response time
+		
+		if(readyProcess != NULL){
+		
+		    // Calculate response time for the process if its their first time exectuing
+                    if (readyProcess->firstexecFlag == 0){
+		        readyProcess->responsetime = globalTime - readyProcess->arrivaltime; // Calculate response time
+		        readyProcess->firstexecFlag += 1; // Set the flag to 1 to indicate first execution
+		    }
+		
+		    readyProcess->status = RUNNING; // Move to running state
+		    pushEntry(runningQueue, readyProcess);
+            	} 
+        }
+        
+        // Increment the global time for each cycle
+        globalTime += TIME_DT; 
+
+        // Update running processes
+        Entry* runningProcess = runningQueue->head;
+
+        if(runningProcess != NULL){
+	    runningProcess->cputime += TIME_DT;
+		
+	    // Check if the process has completed execution
+	    if(runningProcess->cputime >= runningProcess->proctime){
+	    
+	        // If the process is complete, move it to the completeQueue and calculate turnaroundtime
+	        Entry* completeProcess = popEntry(runningQueue);
+		completeProcess->status = COMPLETE;
+		completeProcess->turnaroundtime = globalTime - completeProcess->arrivaltime; // Calculate turnaround time
+		pushEntry(completeQueue, completeProcess);
+            }
+        }
+
+        // Log the state of queues to the file
+        logState(logFile, readyQueue, runningQueue);
+
+    }while(!(readyQueue->size == 0 && runningQueue->size == 0));
+    
+    // Write a separate log file for the complete queue
+    writeCompleteLog(CompleteLogFile, completeQueue);    
+
+    printf("\nSJF Simulation completed.\n");
+    printf("End of simulation loop. Ready queue size: %d, Running queue size: %d\n\n", readyQueue->size, runningQueue->size);
+    
+    // Close log files and clean up memory
+    fclose(logFile);
+    fclose(CompleteLogFile);
+    destroy(readyQueue);
+    destroy(runningQueue);
+    destroy(completeQueue);
+}
+
+
+/**
+  *@brief Run the program
+  *@param none
+  *@return 0
+  */
+int main(void){
+
+    int choice = ALGOR_FIFO;
+    
+    if(choice == ALGOR_RR){
+        roundRobinProcessSimulator();
+    } else if (choice == ALGOR_FIFO){
+        FIFOProcessSimulator();
+    } else if(choice == ALGOR_SJF){
+        SJFProcessSimulator();
+    }
+    return(0);
 }

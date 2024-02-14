@@ -2,7 +2,7 @@
   *@file dStruct.h
   *@brief Header File
   *@author Salah Mohamed & Vy Tran
-  *@date 18012024
+  *@date 05 February 2024
   *@version 5
   */
 
@@ -16,6 +16,10 @@ typedef struct Entry {
 	int niceness;
 	double cputime;
 	double proctime;
+	double arrivaltime;
+	double turnaroundtime;
+	double responsetime;
+	int firstexecFlag;
 	struct Entry* next;
 } Entry;
 
@@ -31,7 +35,7 @@ EntryList* initialize();
 
 void destroy(EntryList* entryList);
 
-Entry* createEntry(int pid, int status, int niceness, double cputime, double proctime);
+Entry* createEntry(int pid, int status, int niceness, double cputime, double proctime, double arrivaltime, double turnaroundtime, double responsetime, int firstexecFlag);
 
 Entry* getEntry(EntryList* entryList, int pid, int index);
 
@@ -62,5 +66,9 @@ void printAllEntries(EntryList* entryList);
 void printEntryByPid(EntryList* entryList, int pid);
 
 void printEntriesByNicenessStatus(EntryList* entryList, int status, int niceness);
+
+void swapEntries(Entry* entry1, Entry* entry2);
+
+void selectionSortByProctime(EntryList* entryList);
 
 #endif

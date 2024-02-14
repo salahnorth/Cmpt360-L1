@@ -6,7 +6,7 @@
   *@file dStruct.c
   *@brief This file performs the functionalities of the library
   *@author Salah Mohamed & Vy Tran
-  *@date 18012024
+  *@date 05022024
   *@version 5
   */
 
@@ -36,8 +36,8 @@ void destroy(EntryList* entryList){
 	//Traverse the list and free each entry
 	while(entryList->head != NULL){
 		Entry* temp = entryList->head;
-		free(temp);
 		entryList->head = entryList->head->next;
+		free(temp);
 	}
 	free(entryList); //Free the entry list structure
 }
@@ -46,7 +46,7 @@ void destroy(EntryList* entryList){
   *@param pid, status, niceness, cputime, proctime
   *@return Entry
   */
-Entry* createEntry(int pid, int status, int niceness, double cputime, double proctime){
+Entry* createEntry(int pid, int status, int niceness, double cputime, double proctime, double arrivaltime, double turnaroundtime, double responsetime, int firstexecFlag){
         Entry* newEntry = (Entry*)malloc(sizeof(Entry));
 
         if (newEntry != NULL) {
@@ -55,6 +55,10 @@ Entry* createEntry(int pid, int status, int niceness, double cputime, double pro
                 newEntry->niceness = niceness;
                 newEntry->cputime = cputime;
                 newEntry->proctime = proctime;
+                newEntry->arrivaltime = arrivaltime;
+                newEntry->turnaroundtime = turnaroundtime;
+                newEntry->responsetime = responsetime;
+                newEntry->firstexecFlag = firstexecFlag;
                 newEntry->next = NULL;
 
                 return newEntry;
@@ -134,11 +138,10 @@ void pushEntry(EntryList* entryList, Entry* newEntry){
 				if (current->next == NULL){
 					current->next = newEntry;
 					newEntry->next = NULL;
-					entryList->size ++;
-					break;
 				}
 				current = current->next;
 			}
+			entryList->size ++;
 		}
 		else{
 			return;
@@ -157,14 +160,19 @@ void pushEntry(EntryList* entryList, Entry* newEntry){
   *@param entryList
   *@return 
  */
+
+
 Entry* popEntry(EntryList* entryList){
 
 	// Check to see if the linked list is not empty to pop
 	if(entryList->size != 0){
-		Entry* poppedEntry = entryList->head;
+		Entry* searchEntry = entryList->head;
 		entryList->head = entryList->head->next;
 		entryList->size--;
-		return poppedEntry;
+		
+		Entry* popEntry = createEntry(searchEntry->pid, searchEntry->status, searchEntry->niceness, searchEntry->cputime, searchEntry->proctime, searchEntry->arrivaltime, searchEntry->turnaroundtime, searchEntry->responsetime, searchEntry->firstexecFlag);
+		
+		return popEntry;
 
 	}
 	else{ 
@@ -385,6 +393,49 @@ void printEntriesByNicenessStatus(EntryList* entryList, int status, int niceness
 	if(count == 1){
 		printf("No entries found with the specified niceness and/or status.\n");
 	}
+}
+
+void swapEntries(Entry* entry1, Entry* entry2){
+    int tempPid = entry1->pid;
+    int tempStatus = entry1->status;
+    int tempNiceness = entry1->niceness;
+    double tempCputime = entry1->cputime;
+    double tempProctime = entry1->proctime;
+    
+    entry1->pid = entry2->pid;
+    entry1->status = entry2->status;
+    entry1->niceness = entry2->niceness;
+    entry1->cputime = entry2->cputime;
+    entry1->proctime = entry2->proctime;
+    
+    entry2->pid = tempPid;
+    entry2->status = tempStatus;
+    entry2->niceness = tempNiceness;
+    entry2->cputime = tempCputime;
+    entry2->proctime = tempProctime;
+}
+
+void selectionSortByProctime(EntryList* entryList){
+    if(entryList->head == NULL || entryList->size == 0){
+        return;
+    }
+    Entry* current = entryList->head;
+    
+    while(current != NULL){
+        Entry* minEntry = current;
+        Entry* nextEntry = current->next;
+        
+        while(nextEntry != NULL){
+            if(nextEntry->proctime < minEntry->proctime){
+                minEntry = nextEntry;
+            }
+            nextEntry = nextEntry->next;
+        }
+        if(minEntry != current){
+            swapEntries(current, minEntry);
+        }
+        current = current->next;
+    }
 }
 
 
