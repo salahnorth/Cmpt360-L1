@@ -15,7 +15,10 @@
 #define ALGOR_RR 3
 
 #define TIME_JIFFY 2
-#define TIME_DT 1.0
+#define TIME_DT 0.5
+
+#define SOURCE_DIR "../newProc/"
+#define BACKUP_DIR "../files-to-copy-into-newProc-after-deleting/"
 
 
 /**
@@ -50,6 +53,69 @@ int isRegularFile(char* filePath) {
         }
     }
     return(0);
+}
+
+/**
+  *@brief Move file to backup directory
+  *@param fileName
+  *@return 1 if successful, 0 otherwise
+  */
+int moveFileToBackup(char* fileName) {
+
+    
+
+    char sourcePath[256];
+    char backupPath[256];
+    
+    strcpy(sourcePath, SOURCE_DIR);
+    strcat(sourcePath, fileName);
+    
+    strcpy(backupPath, BACKUP_DIR);
+    strcat(backupPath, fileName);
+
+    if(rename(sourcePath, backupPath) == 0) {
+        printf("Moved file %s to backup.\n", fileName);
+        return 1;
+    } else {
+        perror("Error moving file to backup");
+        return 0;
+    }
+}
+
+/**
+  *@brief Move files from backup directory to source directory
+  *@return 1 if successful, 0 otherwise
+  */
+int moveFilesFromBackup() {
+    DIR *dp;
+    struct dirent *entry;
+
+    dp = opendir(BACKUP_DIR);
+    if(dp == NULL) {
+        perror("Error opening backup directory");
+        return 0;
+    }
+
+    while((entry = readdir(dp))) {
+        if(strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
+            char sourcePath[256];
+            char backupPath[256];
+            
+            strcpy(sourcePath, SOURCE_DIR);
+            strcat(sourcePath, entry->d_name);
+            
+            strcpy(backupPath, BACKUP_DIR);
+            strcat(backupPath, entry->d_name);
+            
+            if(rename(backupPath, sourcePath) != 0) {
+                perror("Error moving file from backup to source");
+                return 0;
+            }
+        }
+    }
+
+    closedir(dp);
+    return 1;
 }
 
 /**
@@ -91,12 +157,11 @@ int readFromFile(const char *path, double *proctime, int *niceness){
                     		printf("Read from file %s: Proctime: %.2f, Niceness: %d\n", entry->d_name, *proctime, *niceness);
                     		fclose(fp);
 				// Deleting the file after reading
-				if(remove(filePath) == 0){
-                	        	printf("Removed file: %s\n", filePath);
+
+				if(moveFileToBackup(entry->d_name) != 1){
+                	        	perror("Error moving file to backup\n");
 			    	} 
-			    	else{
-                        		perror("Error removing file");
-                   		}
+
                     		free(filePath);
                     		return(1);
            		 }
@@ -143,7 +208,7 @@ void printProcessTimesToFile(FILE* file, EntryList* completeQueue){
     Entry* current = completeQueue->head;
     
     while(current != NULL){
-        fprintf(file, "%d, %.2lf, %.2lf, %.2lf\n", current->pid, current->turnaroundtime, current->responsetime, current->arrivaltime);
+        fprintf(file, "%d, %.2lf, %.2lf, %.2f\n", current->pid, current->turnaroundtime, current->responsetime, current->arrivaltime);
         current = current->next;
     }
 }
@@ -155,9 +220,13 @@ void printProcessTimesToFile(FILE* file, EntryList* completeQueue){
   */
 void writeCompleteLog(FILE* logFile, EntryList* completeQueue){
     printAllEntriesToFile(logFile, completeQueue);
-    fprintf(logFile, "\n");
+}
+
+void writetimeInfoLog(FILE* logFile, EntryList* completeQueue){
+
     printProcessTimesToFile(logFile, completeQueue);
 }
+
 
 
 /**
@@ -192,6 +261,13 @@ void FIFOProcessSimulator(){
         printf("Error opening complete log file.\n");
         return;
     }
+    
+    FILE* CompletetimeLogFile = fopen("../log/FIFOtimeinfo.txt", "w");
+    if(CompleteLogFile == NULL){
+        printf("Error opening complete log file.\n");
+        return;
+    }
+    
 
     printf("Simulation started.\n");
 
@@ -206,7 +282,8 @@ void FIFOProcessSimulator(){
             // Create a new process entry and add it to readyQueue
             Entry* newEntry = createEntry(++currentPID, READY, niceness, cputime, proctime, arrivaltime, turnaroundtime, responsetime, firstexecflag);
             pushEntry(readyQueue, newEntry);
-            arrivaltime = globalTime; // Increment arrivaltime for the next process
+            newEntry->arrivaltime += globalTime; // Increment arrivaltime for the next process
+            
         }
 
         // Process all ready processes
@@ -232,7 +309,7 @@ void FIFOProcessSimulator(){
         }
         
         // Increment the global time for each cycle
-        globalTime += TIME_DT; 
+        globalTime += TIME_DT;
 
         // Update running processes
         Entry* runningProcess = runningQueue->head;
@@ -257,7 +334,9 @@ void FIFOProcessSimulator(){
     }while(!(readyQueue->size == 0 && runningQueue->size == 0));
     
     // Write a separate log file for the complete queue
-    writeCompleteLog(CompleteLogFile, completeQueue);    
+    writeCompleteLog(CompleteLogFile, completeQueue); 
+    
+    writetimeInfoLog(CompletetimeLogFile, completeQueue);
 
     printf("\nFIFO Simulation completed.\n");
     printf("End of simulation loop. Ready queue size: %d, Running queue size: %d\n\n", readyQueue->size, runningQueue->size);
@@ -265,6 +344,7 @@ void FIFOProcessSimulator(){
     // Close log files and clean up memory
     fclose(logFile);
     fclose(CompleteLogFile);
+    fclose(CompletetimeLogFile);
 
     destroy(readyQueue);
     destroy(runningQueue);
@@ -299,6 +379,12 @@ void roundRobinProcessSimulator(){
         printf("Error opening complete log file.\n");
         return;
     }
+    
+    FILE* CompletetimeLogFile = fopen("../log/roundrobintimeinfo.txt", "w");
+    if(CompleteLogFile == NULL){
+        printf("Error opening complete log file.\n");
+        return;
+    }
 
     printf("Simulation started.\n");
 
@@ -314,7 +400,7 @@ void roundRobinProcessSimulator(){
             // Create a new process entry and add it to readyQueue
             Entry* newEntry = createEntry(++currentPID, READY, niceness, cputime, proctime, arrivaltime, turnaroundtime, responsetime, firstexecflag);
             pushEntry(readyQueue, newEntry);
-            arrivaltime = globalTime; // Increment arrivaltime for the next process
+            newEntry->arrivaltime += globalTime; // Increment arrivaltime for the next process
         }
          	
         // Process all ready processes
@@ -371,7 +457,9 @@ void roundRobinProcessSimulator(){
     }while(!(readyQueue->size == 0 && runningQueue->size == 0));
     
     // Write a separate log file for the complete queue
-    writeCompleteLog(CompleteLogFile, completeQueue);    
+    writeCompleteLog(CompleteLogFile, completeQueue);   
+    
+    writetimeInfoLog(CompletetimeLogFile, completeQueue); 
 
     printf("\nRound Robin Simulation completed.\n");
     printf("End of simulation loop. Ready queue size: %d, Running queue size: %d\n\n", readyQueue->size, runningQueue->size);
@@ -379,6 +467,7 @@ void roundRobinProcessSimulator(){
     // Close log files and clean up memory
     fclose(logFile);
     fclose(CompleteLogFile);
+    fclose(CompletetimeLogFile);
     destroy(readyQueue);
     destroy(runningQueue);
     destroy(completeQueue);
@@ -412,6 +501,12 @@ void SJFProcessSimulator(){
         printf("Error opening complete log file.\n");
         return;
     }
+    
+    FILE* CompletetimeLogFile = fopen("../log/SJFtimeinfo.txt", "w");
+    if(CompleteLogFile == NULL){
+        printf("Error opening complete log file.\n");
+        return;
+    }
 
     printf("Simulation started.\n");
 
@@ -423,10 +518,10 @@ void SJFProcessSimulator(){
         char* path = "../newProc/";
         if(readFromFile(path, &proctime, &niceness)!= 0){
         
-            // Create a new process entry and add it to readyQueue
+            /// Create a new process entry and add it to readyQueue
             Entry* newEntry = createEntry(++currentPID, READY, niceness, cputime, proctime, arrivaltime, turnaroundtime, responsetime, firstexecflag);
             pushEntry(readyQueue, newEntry);
-            arrivaltime = globalTime; // Increment arrivaltime for the next process
+            newEntry->arrivaltime += globalTime; // Increment arrivaltime for the next process
         }
         
         selectionSortByProctime(readyQueue); // Sort the ready queue in ascending order for SJF algorithm
@@ -478,7 +573,9 @@ void SJFProcessSimulator(){
     }while(!(readyQueue->size == 0 && runningQueue->size == 0));
     
     // Write a separate log file for the complete queue
-    writeCompleteLog(CompleteLogFile, completeQueue);    
+    writeCompleteLog(CompleteLogFile, completeQueue);
+    
+    writetimeInfoLog(CompletetimeLogFile, completeQueue);  
 
     printf("\nSJF Simulation completed.\n");
     printf("End of simulation loop. Ready queue size: %d, Running queue size: %d\n\n", readyQueue->size, runningQueue->size);
@@ -486,9 +583,25 @@ void SJFProcessSimulator(){
     // Close log files and clean up memory
     fclose(logFile);
     fclose(CompleteLogFile);
+    fclose(CompletetimeLogFile);
     destroy(readyQueue);
     destroy(runningQueue);
     destroy(completeQueue);
+}
+
+void runSimulation(int algorithm){
+    if(algorithm == ALGOR_FIFO){
+        FIFOProcessSimulator();
+    }
+    
+    else if(algorithm == ALGOR_SJF){
+        SJFProcessSimulator();
+    }
+    
+    else if(algorithm == ALGOR_RR){
+        roundRobinProcessSimulator();
+    }
+    moveFilesFromBackup();
 }
 
 
@@ -499,14 +612,8 @@ void SJFProcessSimulator(){
   */
 int main(void){
 
-    int choice = ALGOR_FIFO;
-    
-    if(choice == ALGOR_RR){
-        roundRobinProcessSimulator();
-    } else if (choice == ALGOR_FIFO){
-        FIFOProcessSimulator();
-    } else if(choice == ALGOR_SJF){
-        SJFProcessSimulator();
-    }
+    //runSimulation(ALGOR_FIFO);
+    runSimulation(ALGOR_RR);
+
     return(0);
 }
