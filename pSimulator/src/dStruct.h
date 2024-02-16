@@ -14,11 +14,11 @@ typedef struct Entry {
 	int pid;
 	int status;
 	int niceness;
-	double cputime;
-	double proctime;
-	double arrivaltime;
-	double turnaroundtime;
-	double responsetime;
+	float cputime;
+	float proctime;
+	float arrivaltime;
+	float turnaroundtime;
+	float responsetime;
 	int firstexecFlag;
 	struct Entry* next;
 } Entry;
@@ -35,19 +35,21 @@ EntryList* initialize();
 
 void destroy(EntryList* entryList);
 
-Entry* createEntry(int pid, int status, int niceness, double cputime, double proctime, double arrivaltime, double turnaroundtime, double responsetime, int firstexecFlag);
+Entry* createEntry(int pid, int status, int niceness, float cputime, float proctime, float arrivaltime, float turnaroundtime, float responsetime, int firstexecFlag);
 
 Entry* getEntry(EntryList* entryList, int pid, int index);
 
-void setEntry(EntryList* entryList, int pid, int status, int niceness, double cputime, double proctime);
+void setEntry(EntryList* entryList, int pid, int status, int niceness, float cputime, float proctime);
 
 void pushEntry(EntryList* entryList, Entry* newEntry);
 
 Entry* popEntry(EntryList* entryList);
 
-double getCputime(EntryList* entryList, int pid);
+Entry* copyEntry(Entry* originalEntry);
 
-void setCputime(EntryList* entryList, int pid, double cputime);
+float getCputime(EntryList* entryList, int pid);
+
+void setCputime(EntryList* entryList, int pid, float cputime);
 
 int getStatus(EntryList* entryList, int pid);
 

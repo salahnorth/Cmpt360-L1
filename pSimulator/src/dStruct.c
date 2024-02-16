@@ -46,7 +46,7 @@ void destroy(EntryList* entryList){
   *@param pid, status, niceness, cputime, proctime
   *@return Entry
   */
-Entry* createEntry(int pid, int status, int niceness, double cputime, double proctime, double arrivaltime, double turnaroundtime, double responsetime, int firstexecFlag){
+Entry* createEntry(int pid, int status, int niceness, float cputime, float proctime, float arrivaltime, float turnaroundtime, float responsetime, int firstexecFlag){
         Entry* newEntry = (Entry*)malloc(sizeof(Entry));
 
         if (newEntry != NULL) {
@@ -96,7 +96,7 @@ Entry* getEntry(EntryList* entryList, int pid, int index){
   *@param entryList, pid, status, niceness, cputime, proctime
   *@return none
   */
-void setEntry(EntryList* entryList, int pid, int status, int niceness, double cputime, double proctime){
+void setEntry(EntryList* entryList, int pid, int status, int niceness, float cputime, float proctime){
 	Entry* entry = getEntry(entryList, pid, -1); 
 	// Get the entry by pid. The -1 for index is to only search for pid
 
@@ -170,7 +170,7 @@ Entry* popEntry(EntryList* entryList){
 		entryList->head = entryList->head->next;
 		entryList->size--;
 		
-		Entry* popEntry = createEntry(searchEntry->pid, searchEntry->status, searchEntry->niceness, searchEntry->cputime, searchEntry->proctime, searchEntry->arrivaltime, searchEntry->turnaroundtime, searchEntry->responsetime, searchEntry->firstexecFlag);
+		Entry* popEntry = copyEntry(searchEntry);
 		
 		return popEntry;
 
@@ -182,11 +182,23 @@ Entry* popEntry(EntryList* entryList){
 	}
 }
 
+/**@brief Copying an entry from the list
+  *@param entry
+  *@return copied entry
+ */
+Entry* copyEntry(Entry* originalEntry){
+
+    // Copying the info of the original entry to our new one
+    Entry* cpEntry = createEntry(originalEntry->pid, originalEntry->status, originalEntry->niceness, originalEntry->cputime, originalEntry->proctime, originalEntry->arrivaltime, originalEntry->turnaroundtime, originalEntry->responsetime, originalEntry->firstexecFlag);
+    
+    return cpEntry;
+}
+
 /**@brief Getting the value of CPU time by pid
   *@param entryList, pid
   *@return cputime or -1.0
   */
-double getCputime(EntryList* entryList, int pid){
+float getCputime(EntryList* entryList, int pid){
 
 	//Get Entry by PID from entryList. 
 	//Index is -1 because we're checking PID to get entry
@@ -205,7 +217,7 @@ double getCputime(EntryList* entryList, int pid){
   *@param entryList, pid, cputime
   *@return none
   */
-void setCputime(EntryList* entryList, int pid, double cputime){
+void setCputime(EntryList* entryList, int pid, float cputime){
 
 	//Get Entry by PID from entryList. 
 	//Index is -1 because we're checking PID to get entry.
@@ -399,12 +411,12 @@ void swapEntries(Entry* entry1, Entry* entry2){
     int tempPid = entry1->pid;
     int tempStatus = entry1->status;
     int tempNiceness = entry1->niceness;
-    double tempCputime = entry1->cputime;
-    double tempProctime = entry1->proctime;
-    double tempArrivaltime = entry1->arrivaltime;
-    double tempTurnaroundtime = entry1->turnaroundtime;
-    double tempResponsetime = entry1->responsetime;
-    double tempFirstexecFlag = entry1->firstexecFlag;
+    float tempCputime = entry1->cputime;
+    float tempProctime = entry1->proctime;
+    float tempArrivaltime = entry1->arrivaltime;
+    float tempTurnaroundtime = entry1->turnaroundtime;
+    float tempResponsetime = entry1->responsetime;
+    float tempFirstexecFlag = entry1->firstexecFlag;
     
     entry1->pid = entry2->pid;
     entry1->status = entry2->status;
