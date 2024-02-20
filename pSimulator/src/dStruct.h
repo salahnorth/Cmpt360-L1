@@ -19,6 +19,7 @@ typedef struct Entry {
 	float arrivaltime;
 	float turnaroundtime;
 	float responsetime;
+	float cputimeSlice;
 	int firstexecFlag;
 	struct Entry* next;
 } Entry;
@@ -35,7 +36,7 @@ EntryList* initialize();
 
 void destroy(EntryList* entryList);
 
-Entry* createEntry(int pid, int status, int niceness, float cputime, float proctime, float arrivaltime, float turnaroundtime, float responsetime, int firstexecFlag);
+Entry* createEntry(int pid, int status, int niceness, float cputime, float proctime, float arrivaltime, float turnaroundtime, float responsetime, float cputimeSlice, int firstexecFlag);
 
 Entry* getEntry(EntryList* entryList, int pid, int index);
 
@@ -58,6 +59,8 @@ void setStatus(EntryList* entryList, int pid, int status);
 int getNiceness(EntryList* entryList, int pid);
 
 void setNiceness(EntryList* entryList, int pid, int niceness);
+
+void resetCputimeSlice(Entry* entry);
 
 int searchEntryByPid(EntryList* entryList, int pid);
 

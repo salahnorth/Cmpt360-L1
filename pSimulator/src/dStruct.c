@@ -46,7 +46,7 @@ void destroy(EntryList* entryList){
   *@param pid, status, niceness, cputime, proctime
   *@return Entry
   */
-Entry* createEntry(int pid, int status, int niceness, float cputime, float proctime, float arrivaltime, float turnaroundtime, float responsetime, int firstexecFlag){
+Entry* createEntry(int pid, int status, int niceness, float cputime, float proctime, float arrivaltime, float turnaroundtime, float responsetime, float cputimeSlice, int firstexecFlag){
         Entry* newEntry = (Entry*)malloc(sizeof(Entry));
 
         if (newEntry != NULL) {
@@ -58,6 +58,7 @@ Entry* createEntry(int pid, int status, int niceness, float cputime, float proct
                 newEntry->arrivaltime = arrivaltime;
                 newEntry->turnaroundtime = turnaroundtime;
                 newEntry->responsetime = responsetime;
+                newEntry->cputimeSlice = cputimeSlice;
                 newEntry->firstexecFlag = firstexecFlag;
                 newEntry->next = NULL;
 
@@ -189,7 +190,7 @@ Entry* popEntry(EntryList* entryList){
 Entry* copyEntry(Entry* originalEntry){
 
     // Copying the info of the original entry to our new one
-    Entry* cpEntry = createEntry(originalEntry->pid, originalEntry->status, originalEntry->niceness, originalEntry->cputime, originalEntry->proctime, originalEntry->arrivaltime, originalEntry->turnaroundtime, originalEntry->responsetime, originalEntry->firstexecFlag);
+    Entry* cpEntry = createEntry(originalEntry->pid, originalEntry->status, originalEntry->niceness, originalEntry->cputime, originalEntry->proctime, originalEntry->arrivaltime, originalEntry->turnaroundtime, originalEntry->responsetime, originalEntry->cputimeSlice, originalEntry->firstexecFlag);
     
     return cpEntry;
 }
@@ -307,6 +308,10 @@ void setNiceness(EntryList* entryList, int pid, int niceness){
         }
 }
 
+void resetCputimeSlice(Entry* entry){
+    entry->cputimeSlice = 0.0;
+}
+
 /**@brief Searching an entry by pid
   *@param entryList, pid
   *@return 1 or 0
@@ -416,6 +421,7 @@ void swapEntries(Entry* entry1, Entry* entry2){
     float tempArrivaltime = entry1->arrivaltime;
     float tempTurnaroundtime = entry1->turnaroundtime;
     float tempResponsetime = entry1->responsetime;
+    float tempCputimeSlice = entry1->cputimeSlice;
     float tempFirstexecFlag = entry1->firstexecFlag;
     
     entry1->pid = entry2->pid;
@@ -426,6 +432,7 @@ void swapEntries(Entry* entry1, Entry* entry2){
     entry1->arrivaltime = entry2->arrivaltime;
     entry1->turnaroundtime = entry2->turnaroundtime;
     entry1->responsetime = entry2->responsetime;
+    entry1->cputimeSlice = entry2->cputimeSlice;
     entry1->firstexecFlag = entry2->firstexecFlag;
     
     entry2->pid = tempPid;
@@ -436,6 +443,7 @@ void swapEntries(Entry* entry1, Entry* entry2){
     entry2->arrivaltime = tempArrivaltime;
     entry2->turnaroundtime = tempTurnaroundtime;
     entry2->responsetime = tempResponsetime;
+    entry2->cputimeSlice = tempCputimeSlice;
     entry2->firstexecFlag = tempFirstexecFlag;
 }
 
