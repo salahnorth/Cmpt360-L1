@@ -18,7 +18,7 @@
 #define ALGOR_RR 3
 
 #define TIME_JIFFY 2
-#define TIME_DT 1.0
+#define TIME_DT 0.1
 
 #define SOURCE_DIR "../newProc/"
 #define BACKUP_DIR "../files-to-copy-into-newProc-after-deleting/"
@@ -468,8 +468,8 @@ void roundRobinProcessSimulator(){
 		pushEntry(completeQueue, completeProcess);
 		
 	      // If quantum time elapsed and process is not complete, preempt the process
-            } else if(quantumCounter >= TIME_JIFFY && runningProcess->cputime < runningProcess->proctime){
-                logState(logFile, readyQueue, runningQueue);
+            } else if(quantumCounter > TIME_JIFFY && runningProcess->cputime < runningProcess->proctime){
+                
                 
                 resetCputimeSlice(runningProcess); // Reset cputimeSlice to 0 in order to track the time in the running queue before popped
                 
@@ -478,7 +478,7 @@ void roundRobinProcessSimulator(){
             	preemptedProcess->status = READY;  // Move the process back to the readyQueue
             	
             	pushEntry(readyQueue, preemptedProcess);
-
+            	
             	quantumCounter = 0; // Reset the quantum counter
             }
         } 
