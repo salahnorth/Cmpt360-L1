@@ -46,7 +46,7 @@ void destroy(EntryList* entryList){
   *@param pid, status, niceness, cputime, proctime
   *@return Entry
   */
-Entry* createEntry(int pid, int status, int niceness, float cputime, float proctime, float arrivaltime, float turnaroundtime, float responsetime, float cputimeSlice, int firstexecFlag){
+Entry* createEntry(int pid, int status, int niceness, float cputime, float proctime, float arrivaltime, float turnaroundtime, float responsetime, float cputimeSlice, int firstexecFlag, int indicator){
         Entry* newEntry = (Entry*)malloc(sizeof(Entry));
 
         if (newEntry != NULL) {
@@ -60,6 +60,7 @@ Entry* createEntry(int pid, int status, int niceness, float cputime, float proct
                 newEntry->responsetime = responsetime;
                 newEntry->cputimeSlice = cputimeSlice;
                 newEntry->firstexecFlag = firstexecFlag;
+		newEntry->indicator = indicator;
                 newEntry->next = NULL;
 
                 return newEntry;
@@ -190,7 +191,12 @@ Entry* popEntry(EntryList* entryList){
 Entry* copyEntry(Entry* originalEntry){
 
     // Copying the info of the original entry to our new one
-    Entry* cpEntry = createEntry(originalEntry->pid, originalEntry->status, originalEntry->niceness, originalEntry->cputime, originalEntry->proctime, originalEntry->arrivaltime, originalEntry->turnaroundtime, originalEntry->responsetime, originalEntry->cputimeSlice, originalEntry->firstexecFlag);
+    Entry* cpEntry = createEntry(originalEntry->pid, originalEntry->status,
+		    originalEntry->niceness, originalEntry->cputime,
+		    originalEntry->proctime, originalEntry->arrivaltime,
+		    originalEntry->turnaroundtime, originalEntry->responsetime,
+		    originalEntry->cputimeSlice, originalEntry->firstexecFlag,
+		    originalEntry->indicator);
     
     return cpEntry;
 }
