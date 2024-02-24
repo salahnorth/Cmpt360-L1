@@ -190,11 +190,13 @@ void printHeaderToFile(FILE *file){
 void printAllEntriesToFile(FILE* file, EntryList* entryList){
 
     Entry* current = entryList->head;
-    
+
     while(current != NULL){
-        fprintf(file, "%.2f, %d, %d, %d, %.2f, %.2f, %.2f, %.2f, %.2f\n",
+        fprintf(file, "%.2f, %d, %d, %d, %.2f, %.2f, %.2f, %.2f, %.2f, %d\n",
                 globalTime, current->pid, current->status, current->niceness,
-                current->cputime, current->cputimeSlice, current->proctime, current->turnaroundtime, current->responsetime);
+                current->cputime, current->cputimeSlice, current->proctime,
+		current->turnaroundtime, current->responsetime,
+		current->indicator);
         current = current->next;
     }
 
@@ -205,12 +207,14 @@ void printAllEntriesToFile(FILE* file, EntryList* entryList){
   *@param logFile, readyQueue, runningQueue
   *@return none
   */
-void logState(FILE* logFile, EntryList* readyQueue, EntryList* runningQueue){
+void logState(FILE* logFile, EntryList* readyQueue, EntryList* runningQueue, EntryList* completeQueue){
 
     printAllEntriesToFile(logFile, readyQueue);
     fprintf(logFile, "\n");
     printAllEntriesToFile(logFile, runningQueue);
     fprintf(logFile, "\n\n");
+    printAllEntriesToFile(logFile, completeQueue);
+    fprintf(logFile, "\n\n\n");
 }
 
 void printProcessTimesToFile(FILE* file, EntryList* completeQueue){
@@ -254,6 +258,7 @@ void FIFOProcessSimulator(){
     float turnaroundtime = globalTime;
     float responsetime = globalTime;
     float cputimeSlice = globalTime;
+    int indicator = 0;	// Process is changed inside the running queue
     
     int firstexecflag = 0; // Flag to indicate if a process is executing for the first time
 
@@ -288,7 +293,9 @@ void FIFOProcessSimulator(){
         if(readFromFile(path, &proctime, &niceness)!= 0){
         
             /// Create a new process entry and add it to readyQueue
-            Entry* newEntry = createEntry(++currentPID, READY, niceness, cputime, proctime, arrivaltime, turnaroundtime, responsetime, cputimeSlice, firstexecflag);
+            Entry* newEntry = createEntry(++currentPID, READY, niceness,
+			    cputime, proctime, arrivaltime, turnaroundtime,
+			    responsetime, cputimeSlice, firstexecflag, indicator);
             pushEntry(readyQueue, newEntry);
             newEntry->arrivaltime += globalTime; // Increment arrivaltime for the next process
         }
@@ -324,7 +331,7 @@ void FIFOProcessSimulator(){
         
 	    runningProcess->cputime += (float) TIME_DT;
 	    runningProcess->cputimeSlice += (float) TIME_DT;
-	
+		
 	    // Check if the process has completed execution
 	    if(runningProcess->cputime >= runningProcess->proctime){
 	    
@@ -333,7 +340,7 @@ void FIFOProcessSimulator(){
 	        runningProcess->cputime = runningProcess->proctime; // Completed process execution
         	
         	resetCputimeSlice(runningProcess); // Reset cputimeSlice to 0 in order to track the time in the running queue before popped
-	        
+	        runningProcess->indicator = 1;
 	        Entry* completeProcess = popEntry(runningQueue);
 		completeProcess->status = COMPLETE;
 		
@@ -348,7 +355,7 @@ void FIFOProcessSimulator(){
         globalTime += (float) TIME_DT;
         
         // Log the state of queues to the file
-        logState(logFile, readyQueue, runningQueue);
+        logState(logFile, readyQueue, runningQueue, completeQueue);
         
         
 
@@ -384,6 +391,8 @@ void roundRobinProcessSimulator(){
     float turnaroundtime = globalTime;
     float responsetime = globalTime;
     float cputimeSlice = globalTime;
+
+    int indicator = 1;
     
     int firstexecflag = 0; // Flag to indicate if a process is executing for the first time
     float quantumCounter = 0.0f; // Counter for quantum comparison
@@ -419,7 +428,9 @@ void roundRobinProcessSimulator(){
         if(readFromFile(path, &proctime, &niceness)!= 0){
         
             // Create a new process entry and add it to readyQueue
-            Entry* newEntry = createEntry(++currentPID, READY, niceness, cputime, proctime, arrivaltime, turnaroundtime, responsetime, cputimeSlice, firstexecflag);
+            Entry* newEntry = createEntry(++currentPID, READY, niceness,
+			    cputime, proctime, arrivaltime, turnaroundtime,
+			    responsetime, cputimeSlice, firstexecflag, indicator);
             pushEntry(readyQueue, newEntry);
             newEntry->arrivaltime += globalTime; // Increment arrivaltime for the next process
         }
@@ -459,7 +470,7 @@ void roundRobinProcessSimulator(){
 		// If the process is complete, move it to the completeQueue
 		runningProcess->cputime = runningProcess->proctime; // Completed process execution
 		runningProcess->turnaroundtime = globalTime - runningProcess->arrivaltime; // Calculate turnaround time
-		
+	 	logState(logFile, readyQueue, runningQueue, completeQueue);	
 		resetCputimeSlice(runningProcess); // Reset cputimeSlice to 0 in order to track the time in the running queue before popped
 		
 	        Entry* completeProcess = popEntry(runningQueue);
@@ -469,22 +480,23 @@ void roundRobinProcessSimulator(){
 		
 	      // If quantum time elapsed and process is not complete, preempt the process
             } else if(quantumCounter > TIME_JIFFY && runningProcess->cputime < runningProcess->proctime){
-                
+        	logState(logFile, readyQueue, runningQueue, completeQueue);       	 
                 
                 resetCputimeSlice(runningProcess); // Reset cputimeSlice to 0 in order to track the time in the running queue before popped
-                
-            	Entry* preemptedProcess = popEntry(runningQueue);
-            	    
+               	Entry* preemptedProcess = popEntry(runningQueue);  
             	preemptedProcess->status = READY;  // Move the process back to the readyQueue
-            	
+          
             	pushEntry(readyQueue, preemptedProcess);
             	
             	quantumCounter = 0; // Reset the quantum counter
+		preemptedProcess->indicator++;
+
             }
-        } 
+	    else{
+		logState(logFile, readyQueue, runningQueue, completeQueue);
+	    }
         
-        logState(logFile, readyQueue, runningQueue);
-	
+	}	
 
     }while(!(readyQueue->size == 0 && runningQueue->size == 0));
     
@@ -519,7 +531,8 @@ void SJFProcessSimulator(){
     float turnaroundtime = globalTime;
     float responsetime = globalTime;
     float cputimeSlice = globalTime;
-    
+    int indicator = 0;
+
     int firstexecflag = 0; // Flag to indicate if a process is executing for the first time
 
     // Open log files to record simulated results
@@ -553,7 +566,9 @@ void SJFProcessSimulator(){
         if(readFromFile(path, &proctime, &niceness)!= 0){
         
             /// Create a new process entry and add it to readyQueue
-            Entry* newEntry = createEntry(++currentPID, READY, niceness, cputime, proctime, arrivaltime, turnaroundtime, responsetime, cputimeSlice, firstexecflag);
+            Entry* newEntry = createEntry(++currentPID, READY, niceness,
+			    cputime, proctime, arrivaltime, turnaroundtime,
+			    responsetime, cputimeSlice, firstexecflag, indicator);
             pushEntry(readyQueue, newEntry);
             newEntry->arrivaltime += globalTime; // Increment arrivaltime for the next process
             selectionSortByProctime(readyQueue); // Sort the ready queue in ascending order for SJF algorithm
@@ -614,7 +629,7 @@ void SJFProcessSimulator(){
         globalTime += (float) TIME_DT;
         
         // Log the state of queues to the file
-        logState(logFile, readyQueue, runningQueue);
+        logState(logFile, readyQueue, runningQueue, completeQueue);
 
 
     }while(!(readyQueue->size == 0 && runningQueue->size == 0));
