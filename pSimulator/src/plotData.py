@@ -28,6 +28,29 @@ def loadRawData(filename):
     return rawData
 
 
+def controllingKeys(fData):
+	keys = []
+	for k in fData.keys():
+		keys.append(k)
+		
+	keys.reverse()
+		
+	'''n = len(keys)
+    # Traverse through all elements
+	for i in range(n):
+	# Find the minimum element in the unsorted portion
+		minidx = i
+		for j in range(i + 1, n):
+			if keys[j] < keys[minidx]:
+				minidx = j
+			# Swap the found minimum element with the first element
+		keys[i], keys[minidx] = keys[minidx], keys[i]'''
+		
+	fkDict = {} 
+	for element in keys:
+		fkDict[element] = {}
+	return fkDict
+
 def formatData(rData):
     '''Purpose  : Format raw data
     Parameter   : rData
@@ -36,14 +59,21 @@ def formatData(rData):
     for line in rData:
         line = line.split(", ")
         fData[int(line[1])] = {}
+    print("BEFORE", fData)
+    
+    fData = controllingKeys(fData)
+    print("AFTER", fData)
 
     for k in fData.keys():
         kData = {}
+        print("KEY", k)
         for ele in rData:
             ele = ele.split(", ")
+           
             if (int(ele[1]) == k) and int(ele[2]) == 2:
-                kData[(ele[9]).replace('\n', '')] = float(ele[5])
+                kData[(ele[9])] = float(ele[5])
         fData[k] = kData
+    print(fData)
     return fData
 
 def extractCompleteTime(rData):
@@ -171,6 +201,7 @@ def RRdata(fData):
     time = []
     for i in sameK:  # Round no. not pid
         time = getValuesByKey(fData, i)
+    print(time)
     return time
 
 
@@ -392,7 +423,7 @@ def main():
     else:
         type = int(sys.argv[1])
         if type == 3:   # ROUND-ROBIN
-            file1 = find_file("../log/roundrobinLog.txt")
+            file1 = find_file("../log/MLFQLog.txt")
             if len(file1) == 0:
                 print("Error! There's no file.")
             else:

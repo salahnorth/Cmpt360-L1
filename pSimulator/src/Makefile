@@ -4,11 +4,12 @@ CC := gcc
 CFLAGS := -std=c11 -Wall
 LFLAGS := -lc -lm
 Object = procSim.o dStruct.o dStruct.h 
-target = lab5
+target = lab2
 
 ALGOR_FIFO := 1
 ALGOR_SJF := 2
 ALGOR_RR := 3
+ALGOR_MLFQ := 4
 
 $(target):$(Object)
 	$(CC) $(CFLAGS) $(LFLAGS) $^ -o $@
@@ -27,3 +28,6 @@ run-sjf:
 	
 run-rr:
 	./$(target) $(ALGOR_RR)
+	
+run-mlfq:
+	./$(target) $(ALGOR_MLFQ)

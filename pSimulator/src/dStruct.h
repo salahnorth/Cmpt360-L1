@@ -2,8 +2,8 @@
   *@file dStruct.h
   *@brief Header File
   *@author Salah Mohamed & Vy Tran
-  *@date 26 February 2024
-  *@version 6
+  *@date 05 February 2024
+  *@version 5
   */
 
 #ifndef DSTRUCT_H
@@ -22,6 +22,8 @@ typedef struct Entry {
 	float cputimeSlice;
 	int firstexecFlag;
 	int indicator;
+	int originalPriority;
+	int currentPriority;
 	struct Entry* next;
 } Entry;
 
@@ -37,10 +39,7 @@ EntryList* initialize();
 
 void destroy(EntryList* entryList);
 
-Entry* createEntry(int pid, int status, int niceness, float cputime, float
-		proctime, float arrivaltime, float turnaroundtime, float
-		responsetime, float cputimeSlice, int firstexecFlag, int
-		indicator);
+Entry* createEntry(int pid, int status, int niceness, float cputime, float proctime, float arrivaltime, float turnaroundtime, float responsetime, float cputimeSlice, int firstexecFlag, int indicator, int originalPriority, int currentPriority);
 
 Entry* getEntry(EntryList* entryList, int pid, int index);
 
@@ -79,5 +78,8 @@ void printEntriesByNicenessStatus(EntryList* entryList, int status, int niceness
 void swapEntries(Entry* entry1, Entry* entry2);
 
 void selectionSortByProctime(EntryList* entryList);
+
+void resetProcessesToOriginalQueues(EntryList* runningQueue, EntryList* queue1, EntryList* queue2, EntryList* queue3, EntryList* queue4, EntryList* queue5);
+
 
 #endif

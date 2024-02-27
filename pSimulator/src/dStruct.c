@@ -6,8 +6,8 @@
   *@file dStruct.c
   *@brief This file performs the functionalities of the library
   *@author Salah Mohamed & Vy Tran
-  *@date 26022024
-  *@version 6
+  *@date 05022024
+  *@version 5
   */
 
 
@@ -46,7 +46,7 @@ void destroy(EntryList* entryList){
   *@param pid, status, niceness, cputime, proctime
   *@return Entry
   */
-Entry* createEntry(int pid, int status, int niceness, float cputime, float proctime, float arrivaltime, float turnaroundtime, float responsetime, float cputimeSlice, int firstexecFlag, int indicator){
+Entry* createEntry(int pid, int status, int niceness, float cputime, float proctime, float arrivaltime, float turnaroundtime, float responsetime, float cputimeSlice, int firstexecFlag, int indicator, int originalPriority, int currentPriority){
         Entry* newEntry = (Entry*)malloc(sizeof(Entry));
 
         if (newEntry != NULL) {
@@ -60,7 +60,9 @@ Entry* createEntry(int pid, int status, int niceness, float cputime, float proct
                 newEntry->responsetime = responsetime;
                 newEntry->cputimeSlice = cputimeSlice;
                 newEntry->firstexecFlag = firstexecFlag;
-		newEntry->indicator = indicator;
+                newEntry->indicator = indicator;
+                newEntry->originalPriority = originalPriority;
+                newEntry->currentPriority = currentPriority;
                 newEntry->next = NULL;
 
                 return newEntry;
@@ -163,6 +165,7 @@ void pushEntry(EntryList* entryList, Entry* newEntry){
   *@return 
  */
 
+
 Entry* popEntry(EntryList* entryList){
 
 	// Check to see if the linked list is not empty to pop
@@ -190,12 +193,7 @@ Entry* popEntry(EntryList* entryList){
 Entry* copyEntry(Entry* originalEntry){
 
     // Copying the info of the original entry to our new one
-    Entry* cpEntry = createEntry(originalEntry->pid, originalEntry->status,
-		    originalEntry->niceness, originalEntry->cputime,
-		    originalEntry->proctime, originalEntry->arrivaltime,
-		    originalEntry->turnaroundtime, originalEntry->responsetime,
-		    originalEntry->cputimeSlice, originalEntry->firstexecFlag,
-		    originalEntry->indicator);
+    Entry* cpEntry = createEntry(originalEntry->pid, originalEntry->status, originalEntry->niceness, originalEntry->cputime, originalEntry->proctime, originalEntry->arrivaltime, originalEntry->turnaroundtime, originalEntry->responsetime, originalEntry->cputimeSlice, originalEntry->firstexecFlag, originalEntry->indicator, originalEntry->originalPriority, originalEntry->currentPriority);
     
     return cpEntry;
 }
@@ -417,10 +415,6 @@ void printEntriesByNicenessStatus(EntryList* entryList, int status, int niceness
 	}
 }
 
-/**@brief Swap entry values
-  *@param 2 entries
-  *@return none
-  */
 void swapEntries(Entry* entry1, Entry* entry2){
     int tempPid = entry1->pid;
     int tempStatus = entry1->status;
@@ -432,6 +426,9 @@ void swapEntries(Entry* entry1, Entry* entry2){
     float tempResponsetime = entry1->responsetime;
     float tempCputimeSlice = entry1->cputimeSlice;
     float tempFirstexecFlag = entry1->firstexecFlag;
+    float tempIndicator = entry1->indicator;
+    int tempOriginalPriority = entry1->originalPriority;
+    int tempCurrentPriority = entry1->currentPriority;
     
     entry1->pid = entry2->pid;
     entry1->status = entry2->status;
@@ -443,6 +440,9 @@ void swapEntries(Entry* entry1, Entry* entry2){
     entry1->responsetime = entry2->responsetime;
     entry1->cputimeSlice = entry2->cputimeSlice;
     entry1->firstexecFlag = entry2->firstexecFlag;
+    entry1->indicator = entry2->indicator;
+    entry1->originalPriority = entry2->originalPriority;
+    entry1->currentPriority = entry2->currentPriority;
     
     entry2->pid = tempPid;
     entry2->status = tempStatus;
@@ -454,12 +454,11 @@ void swapEntries(Entry* entry1, Entry* entry2){
     entry2->responsetime = tempResponsetime;
     entry2->cputimeSlice = tempCputimeSlice;
     entry2->firstexecFlag = tempFirstexecFlag;
+    entry2->indicator = tempIndicator;
+    entry2->originalPriority = tempOriginalPriority;
+    entry2->currentPriority = tempCurrentPriority;
 }
 
-/**@brief Sort the entrylist based on Proctime
-  *@param entryList
-  *@return none
-  */
 void selectionSortByProctime(EntryList* entryList){
     if(entryList->head == NULL || entryList->size == 0){
         return;
@@ -482,5 +481,30 @@ void selectionSortByProctime(EntryList* entryList){
         current = current->next;
     }
 }
+
+// Function to reset processes to their original priority level queues
+void resetProcessesToOriginalQueues(EntryList* runningQueue, EntryList* queue1, EntryList* queue2, EntryList* queue3, EntryList* queue4, EntryList* queue5) {
+
+    while (runningQueue->size > 0) {
+        Entry* process = popEntry(runningQueue);
+        int originalPriority = process->originalPriority;
+        
+        if (originalPriority == 5)
+            pushEntry(queue5, process);
+            
+        else if (originalPriority == 4)
+            pushEntry(queue4, process);
+            
+        else if (originalPriority == 3)
+            pushEntry(queue3, process);
+            
+        else if (originalPriority == 2)
+            pushEntry(queue2, process);
+            
+        else if (originalPriority == 1)
+            pushEntry(queue1, process);
+    }
+}
+
 
 
