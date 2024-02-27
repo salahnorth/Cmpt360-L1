@@ -6,8 +6,8 @@
   *@file dStruct.c
   *@brief This file performs the functionalities of the library
   *@author Salah Mohamed & Vy Tran
-  *@date 05022024
-  *@version 5
+  *@date 26022024
+  *@version 6
   */
 
 
@@ -162,7 +162,6 @@ void pushEntry(EntryList* entryList, Entry* newEntry){
   *@param entryList
   *@return 
  */
-
 
 Entry* popEntry(EntryList* entryList){
 
@@ -418,6 +417,10 @@ void printEntriesByNicenessStatus(EntryList* entryList, int status, int niceness
 	}
 }
 
+/**@brief Swap entry values
+  *@param 2 entries
+  *@return none
+  */
 void swapEntries(Entry* entry1, Entry* entry2){
     int tempPid = entry1->pid;
     int tempStatus = entry1->status;
@@ -453,6 +456,10 @@ void swapEntries(Entry* entry1, Entry* entry2){
     entry2->firstexecFlag = tempFirstexecFlag;
 }
 
+/**@brief Sort the entrylist based on Proctime
+  *@param entryList
+  *@return none
+  */
 void selectionSortByProctime(EntryList* entryList){
     if(entryList->head == NULL || entryList->size == 0){
         return;

@@ -4,7 +4,11 @@ CC := gcc
 CFLAGS := -std=c11 -Wall
 LFLAGS := -lc -lm
 Object = procSim.o dStruct.o dStruct.h 
-target = lab2
+target = lab5
+
+ALGOR_FIFO := 1
+ALGOR_SJF := 2
+ALGOR_RR := 3
 
 $(target):$(Object)
 	$(CC) $(CFLAGS) $(LFLAGS) $^ -o $@
@@ -15,6 +19,11 @@ clean:
 	rm -f *.o $(target)
 conform:
 	./indent -linux *.c -o *.c
-run:
-	./$(target)
+run-fifo:
+	./$(target) $(ALGOR_FIFO)
 
+run-sjf:
+	./$(target) $(ALGOR_SJF)
+	
+run-rr:
+	./$(target) $(ALGOR_RR)

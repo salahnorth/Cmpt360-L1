@@ -2,8 +2,8 @@
   *@file dStruct.h
   *@brief Header File
   *@author Salah Mohamed & Vy Tran
-  *@date 05 February 2024
-  *@version 5
+  *@date 26 February 2024
+  *@version 6
   */
 
 #ifndef DSTRUCT_H

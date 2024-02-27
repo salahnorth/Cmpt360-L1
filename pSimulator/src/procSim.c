@@ -5,9 +5,6 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <string.h>
-#include <math.h>
-#include <stdbool.h>
-#include <float.h>
 
 #define READY 1
 #define RUNNING 2
@@ -21,22 +18,21 @@
 #define TIME_DT 0.1
 
 #define SOURCE_DIR "../newProc/"
-#define BACKUP_DIR "../files-to-copy-into-newProc-after-deleting/"
+#define BACKUP_DIR "../backup_newProc/"
 
 
 /**
   *@file procSim.c
   *@brief This file sets up a process simulator
   *@author Salah Mohamed & Vy Tran
-  *@date 04022024
-  *@version 9
+  *@date 26022024
+  *@version 10
  */
 
 int currentPID = 0;
 float globalTime = 0.0f;
 int fileNumber = 1;
 float quantumCounter = 0.0f;
-//float deltaCputime = 0.1;
 
 
 /**
@@ -65,8 +61,6 @@ int isRegularFile(char* filePath) {
   *@return 1 if successful, 0 otherwise
   */
 int moveFileToBackup(char* fileName) {
-
-    
 
     char sourcePath[256];
     char backupPath[256];
@@ -175,12 +169,6 @@ int readFromFile(const char *path, float *proctime, int *niceness){
 	return(0);                       
 }
 
-void printHeaderToFile(FILE *file){
-    fprintf(file, "//GlobalTime, PID, Status, Niceness, cputime, cputimeSlice, proctime, turnaroundtime, responsetime\n\n");
-
-}
-
-
 /**
   *@brief Print all the entries to a file
   *@param file, EntryList
@@ -217,31 +205,8 @@ void logState(FILE* logFile, EntryList* readyQueue, EntryList* runningQueue, Ent
     fprintf(logFile, "\n\n\n");
 }
 
-void printProcessTimesToFile(FILE* file, EntryList* completeQueue){
-    Entry* current = completeQueue->head;
-    
-    while(current != NULL){
-        fprintf(file, "%d, %.4lf, %.4lf, %.4f\n", current->pid, current->turnaroundtime, current->responsetime, current->arrivaltime);
-        current = current->next;
-    }
-}
-
 /**
-  *@brief Write the final times when the whole process is completed
-  *@param logFile, completeQueue
-  *@return none
-  */
-void writeCompleteLog(FILE* logFile, EntryList* completeQueue){
-    printAllEntriesToFile(logFile, completeQueue);
-}
-
-void writetimeInfoLog(FILE* logFile, EntryList* completeQueue){
-
-    printProcessTimesToFile(logFile, completeQueue);
-}
-
-/**
-  *@brief Simulate the process executiong cycle
+  *@brief Simulate the process executiong cycle for FIFO
   *@param none
   *@return none
   */
@@ -268,21 +233,8 @@ void FIFOProcessSimulator(){
         printf("Error opening log file.\n");
         return;
     }
-
-    FILE* CompleteLogFile = fopen("../log/FIFOCompleteLog.txt", "w");
-    if(CompleteLogFile == NULL){
-        printf("Error opening complete log file.\n");
-        return;
-    }
     
-    FILE* CompletetimeLogFile = fopen("../log/FIFOtimeinfo.txt", "w");
-    if(CompleteLogFile == NULL){
-        printf("Error opening complete log file.\n");
-        return;
-    }
-    
-    
-    printf("Simulation started.\n");
+    printf("FIFO Simulation started.\n");
 
     do{
 
@@ -359,25 +311,143 @@ void FIFOProcessSimulator(){
         
         
 
-    }while(!(readyQueue->size == 0 && runningQueue->size == 0));
-    
-    // Write a separate log file for the complete queue
-    writeCompleteLog(CompleteLogFile, completeQueue);
-    
-    writetimeInfoLog(CompletetimeLogFile, completeQueue);  
+    }while(!(readyQueue->size == 0 && runningQueue->size == 0));  
 
     printf("\nFIFO Simulation completed.\n");
     printf("End of simulation loop. Ready queue size: %d, Running queue size: %d\n\n", readyQueue->size, runningQueue->size);
     
-    // Close log files and clean up memory
+    // Close log file and clean up memory
     fclose(logFile);
-    fclose(CompleteLogFile);
-    fclose(CompletetimeLogFile);
     destroy(readyQueue);
     destroy(runningQueue);
     destroy(completeQueue);
 }
 
+/**
+  *@brief Simulate the process executiong cycle for FIFO
+  *@param none
+  *@return none
+  */
+void SJFProcessSimulator(){
+
+    // Initializing the queues
+    EntryList* readyQueue    = initialize();
+    EntryList* runningQueue  = initialize();
+    EntryList* completeQueue = initialize();
+    
+    // Initially set the time variables to 0 (start of global time) 
+    float cputime = globalTime;
+    float arrivaltime = globalTime;
+    float turnaroundtime = globalTime;
+    float responsetime = globalTime;
+    float cputimeSlice = globalTime;
+    int indicator = 0;
+
+    int firstexecflag = 0; // Flag to indicate if a process is executing for the first time
+
+    // Open log files to record simulated results
+    FILE* logFile = fopen("../log/SJFLog.txt", "w");
+    if(logFile == NULL){
+        printf("Error opening log file.\n");
+        return;
+    }
+
+    printf("SJF Simulation started.\n");
+   
+
+    do{
+
+        // Read from files and add processes to readyQueue
+        int niceness;
+        float proctime;
+        char* path = "../newProc/";
+        while(readFromFile(path, &proctime, &niceness)!= 0){
+        
+            /// Create a new process entry and add it to readyQueue
+            Entry* newEntry = createEntry(++currentPID, READY, niceness,
+			    cputime, proctime, arrivaltime, turnaroundtime,
+			    responsetime, cputimeSlice, firstexecflag, indicator);
+            pushEntry(readyQueue, newEntry);
+            newEntry->arrivaltime += globalTime; // Increment arrivaltime for the next process
+            selectionSortByProctime(readyQueue); // Sort the ready queue in ascending order for SJF algorithm
+            globalTime += TIME_DT;
+            
+        }
+         	
+   
+        // Process all ready processes
+        if(runningQueue->size == 0){
+        
+            // Fetch the process from the readyQueue if the runningQueue is empty, then execute it
+	    Entry* readyProcess = popEntry(readyQueue);
+	    readyProcess->responsetime = globalTime - readyProcess->arrivaltime; // Calculate response time
+		
+		if(readyProcess != NULL){
+		
+		    // Calculate response time for the process if its their first time exectuing
+                    if (readyProcess->firstexecFlag == 0){
+		        readyProcess->responsetime = globalTime - readyProcess->arrivaltime; // Calculate response time
+		        readyProcess->firstexecFlag += 1; // Set the flag to 1 to indicate first execution
+		    }
+		
+		    readyProcess->status = RUNNING; // Move to running state
+		    pushEntry(runningQueue, readyProcess);
+            	} 
+        }
+        
+         
+
+        // Update running processes
+        Entry* runningProcess = runningQueue->head;
+
+        if(runningProcess != NULL){
+        
+	    runningProcess->cputime += (float) TIME_DT;
+	    runningProcess->cputimeSlice += (float) TIME_DT;
+	
+	    // Check if the process has completed execution
+	    if(runningProcess->cputime >= runningProcess->proctime){
+	    
+	        // If the process is complete, move it to the completeQueue
+	        runningProcess->turnaroundtime = globalTime - runningProcess->arrivaltime; // Calculate turnaround time
+	        runningProcess->cputime = runningProcess->proctime; // Completed process execution
+                
+                resetCputimeSlice(runningProcess); // Reset cputimeSlice to 0 in order to track the time in the running queue before popped
+	        
+	        Entry* completeProcess = popEntry(runningQueue);
+		completeProcess->status = COMPLETE;
+		
+		pushEntry(completeQueue, completeProcess);
+		
+
+            }
+            
+        }
+        
+        // Increment the global time for each cycle
+        globalTime += (float) TIME_DT;
+        
+        // Log the state of queues to the file
+        logState(logFile, readyQueue, runningQueue, completeQueue);
+
+
+    }while(!(readyQueue->size == 0 && runningQueue->size == 0));
+
+    printf("\nSJF Simulation completed.\n");
+    printf("End of simulation loop. Ready queue size: %d, Running queue size: %d\n\n", readyQueue->size, runningQueue->size);
+    
+    // Close log file and clean up memory
+    fclose(logFile);
+    destroy(readyQueue);
+    destroy(runningQueue);
+    destroy(completeQueue);
+}
+
+/**
+  *@brief Simulate the process executiong cycle for RR
+  *@param none
+  *@return none
+  */
 void roundRobinProcessSimulator(){
 
     // Initializing the queues
@@ -404,19 +474,7 @@ void roundRobinProcessSimulator(){
         return;
     }
 
-    FILE* CompleteLogFile = fopen("../log/roundrobinCompleteLog.txt", "w");
-    if(CompleteLogFile == NULL){
-        printf("Error opening complete log file.\n");
-        return;
-    }
-    
-    FILE* CompletetimeLogFile = fopen("../log/roundrobintimeinfo.txt", "w");
-    if(CompleteLogFile == NULL){
-        printf("Error opening complete log file.\n");
-        return;
-    } 
-
-    printf("Simulation started.\n");
+    printf("Round Robin Simulation started.\n");
 
     do{
 
@@ -499,158 +557,22 @@ void roundRobinProcessSimulator(){
 	}	
 
     }while(!(readyQueue->size == 0 && runningQueue->size == 0));
-    
-    // Write a separate log file for the complete queue
-    writeCompleteLog(CompleteLogFile, completeQueue);   
-    
-    writetimeInfoLog(CompletetimeLogFile, completeQueue); 
 
     printf("\nRound Robin Simulation completed.\n");
     printf("End of simulation loop. Ready queue size: %d, Running queue size: %d\n\n", readyQueue->size, runningQueue->size);
     
-    // Close log files and clean up memory
+    // Close log file and clean up memory
     fclose(logFile);
-    fclose(CompleteLogFile);
-    fclose(CompletetimeLogFile);
     destroy(readyQueue);
     destroy(runningQueue);
     destroy(completeQueue);
 }
 
-
-void SJFProcessSimulator(){
-
-    // Initializing the queues
-    EntryList* readyQueue    = initialize();
-    EntryList* runningQueue  = initialize();
-    EntryList* completeQueue = initialize();
-    
-    // Initially set the time variables to 0 (start of global time) 
-    float cputime = globalTime;
-    float arrivaltime = globalTime;
-    float turnaroundtime = globalTime;
-    float responsetime = globalTime;
-    float cputimeSlice = globalTime;
-    int indicator = 0;
-
-    int firstexecflag = 0; // Flag to indicate if a process is executing for the first time
-
-    // Open log files to record simulated results
-    FILE* logFile = fopen("../log/SJFLog.txt", "w");
-    if(logFile == NULL){
-        printf("Error opening log file.\n");
-        return;
-    }
-
-    FILE* CompleteLogFile = fopen("../log/SJFCompleteLog.txt", "w");
-    if(CompleteLogFile == NULL){
-        printf("Error opening complete log file.\n");
-        return;
-    }
-    
-    FILE* CompletetimeLogFile = fopen("../log/SJFtimeinfo.txt", "w");
-    if(CompleteLogFile == NULL){
-        printf("Error opening complete log file.\n");
-        return;
-    }
-    
-    printf("Simulation started.\n");
-   
-
-    do{
-
-        // Read from files and add processes to readyQueue
-        int niceness;
-        float proctime;
-        char* path = "../newProc/";
-        if(readFromFile(path, &proctime, &niceness)!= 0){
-        
-            /// Create a new process entry and add it to readyQueue
-            Entry* newEntry = createEntry(++currentPID, READY, niceness,
-			    cputime, proctime, arrivaltime, turnaroundtime,
-			    responsetime, cputimeSlice, firstexecflag, indicator);
-            pushEntry(readyQueue, newEntry);
-            newEntry->arrivaltime += globalTime; // Increment arrivaltime for the next process
-            selectionSortByProctime(readyQueue); // Sort the ready queue in ascending order for SJF algorithm
-            
-        }
-         	
-   
-        // Process all ready processes
-        if(runningQueue->size == 0){
-        
-            // Fetch the process from the readyQueue if the runningQueue is empty, then execute it
-	    Entry* readyProcess = popEntry(readyQueue);
-	    readyProcess->responsetime = globalTime - readyProcess->arrivaltime; // Calculate response time
-		
-		if(readyProcess != NULL){
-		
-		    // Calculate response time for the process if its their first time exectuing
-                    if (readyProcess->firstexecFlag == 0){
-		        readyProcess->responsetime = globalTime - readyProcess->arrivaltime; // Calculate response time
-		        readyProcess->firstexecFlag += 1; // Set the flag to 1 to indicate first execution
-		    }
-		
-		    readyProcess->status = RUNNING; // Move to running state
-		    pushEntry(runningQueue, readyProcess);
-            	} 
-        }
-        
-         
-
-        // Update running processes
-        Entry* runningProcess = runningQueue->head;
-
-        if(runningProcess != NULL){
-        
-	    runningProcess->cputime += (float) TIME_DT;
-	    runningProcess->cputimeSlice += (float) TIME_DT;
-	
-	    // Check if the process has completed execution
-	    if(runningProcess->cputime >= runningProcess->proctime){
-	    
-	        // If the process is complete, move it to the completeQueue
-	        runningProcess->turnaroundtime = globalTime - runningProcess->arrivaltime; // Calculate turnaround time
-	        runningProcess->cputime = runningProcess->proctime; // Completed process execution
-                
-                resetCputimeSlice(runningProcess); // Reset cputimeSlice to 0 in order to track the time in the running queue before popped
-	        
-	        Entry* completeProcess = popEntry(runningQueue);
-		completeProcess->status = COMPLETE;
-		
-		pushEntry(completeQueue, completeProcess);
-		
-
-            }
-            
-        }
-        
-        // Increment the global time for each cycle
-        globalTime += (float) TIME_DT;
-        
-        // Log the state of queues to the file
-        logState(logFile, readyQueue, runningQueue, completeQueue);
-
-
-    }while(!(readyQueue->size == 0 && runningQueue->size == 0));
-    
-    // Write a separate log file for the complete queue
-    writeCompleteLog(CompleteLogFile, completeQueue);
-    
-    writetimeInfoLog(CompletetimeLogFile, completeQueue);  
-
-    printf("\nSJF Simulation completed.\n");
-    printf("End of simulation loop. Ready queue size: %d, Running queue size: %d\n\n", readyQueue->size, runningQueue->size);
-    
-    // Close log files and clean up memory
-    fclose(logFile);
-    fclose(CompleteLogFile);
-    fclose(CompletetimeLogFile);
-    destroy(readyQueue);
-    destroy(runningQueue);
-    destroy(completeQueue);
-}
-
+/**
+  *@brief Run the program based on algorithm
+  *@param algorithm. Integer identifier for chosen algorithm
+  *@return 0
+  */
 void runSimulation(int algorithm){
     if(algorithm == ALGOR_FIFO){
         FIFOProcessSimulator();
@@ -668,15 +590,18 @@ void runSimulation(int algorithm){
 
 
 /**
-  *@brief Run the program
+  *@brief Run program with specified algorithm
   *@param none
   *@return 0
   */
-int main(void){
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Usage: %s <algorithm>\n", argv[0]);
+        return 1;
+    }
 
-    //runSimulation(ALGOR_FIFO);
-    //runSimulation(ALGOR_SJF);
-    runSimulation(ALGOR_RR);
-    
-    return(0);
+    int algorithm = atoi(argv[1]);
+    runSimulation(algorithm);
+
+    return 0;
 }
