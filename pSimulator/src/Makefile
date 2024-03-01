@@ -4,7 +4,7 @@ CC := gcc
 CFLAGS := -std=c11 -Wall
 LFLAGS := -lc -lm
 Object = procSim.o dStruct.o dStruct.h 
-target = lab2
+target = lab6
 
 ALGOR_FIFO := 1
 ALGOR_SJF := 2

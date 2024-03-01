@@ -482,12 +482,39 @@ void selectionSortByProctime(EntryList* entryList){
     }
 }
 
+void selectionSortByArrivalTime(EntryList* entryList){
+    if(entryList->head == NULL || entryList->size == 0){
+        return;
+    }
+    Entry* current = entryList->head;
+    
+    while(current != NULL){
+        Entry* minEntry = current;
+        Entry* nextEntry = current->next;
+        
+        while(nextEntry != NULL){
+            if(nextEntry->arrivaltime < minEntry->arrivaltime){
+                minEntry = nextEntry;
+            }
+            nextEntry = nextEntry->next;
+        }
+        if(minEntry != current){
+            swapEntries(current, minEntry);
+        }
+        current = current->next;
+    }
+}
+
 // Function to reset processes to their original priority level queues
 void resetProcessesToOriginalQueues(EntryList* runningQueue, EntryList* queue1, EntryList* queue2, EntryList* queue3, EntryList* queue4, EntryList* queue5) {
 
     while (runningQueue->size > 0) {
+    
+        //printEntryByPid(runningQueue, 4);
+        
         Entry* process = popEntry(runningQueue);
         int originalPriority = process->originalPriority;
+        process->currentPriority = originalPriority;
         
         if (originalPriority == 5)
             pushEntry(queue5, process);
@@ -503,8 +530,51 @@ void resetProcessesToOriginalQueues(EntryList* runningQueue, EntryList* queue1, 
             
         else if (originalPriority == 1)
             pushEntry(queue1, process);
+            
+        process->status = 1; // Ready process
+        
     }
 }
 
+void resetQueues(EntryList* queue1, EntryList* queue2, EntryList* queue3, EntryList* queue4, EntryList* queue5){
+    EntryList* queues[] = {queue5, queue4, queue3, queue2, queue1};
+   
+    for (int i = 0; i < 5; i++) {
+        EntryList* tempQueue = initialize();
+       
+        // Transfer processes from original queue to tempQueue
+        while (queues[i]->size > 0) {
+            Entry* process = popEntry(queues[i]);
+            pushEntry(tempQueue, process);
+        }
+       
+        // Transfer processes from tempQueue back to original queue
+        while (tempQueue->size > 0) {
+            Entry* process = popEntry(tempQueue);
+            int originalPriority = process->originalPriority;
+            process->currentPriority = originalPriority;
+           
+            if (originalPriority == 5)
+                pushEntry(queue5, process);
+                
+            else if (originalPriority == 4)
+                pushEntry(queue4, process);
+                
+            else if (originalPriority == 3)
+                pushEntry(queue3, process);
+                
+                
+            else if (originalPriority == 2)
+                pushEntry(queue2, process);
+                
+            else if (originalPriority == 1)
+                pushEntry(queue1, process);
+                
+        }
+       
+        // Clean up temporary queue
+        destroy(tempQueue);
+    }
+}
 
 
