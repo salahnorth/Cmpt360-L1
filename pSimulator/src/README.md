@@ -16,8 +16,8 @@ Vy Tran  tranv33@mymacewan.ca
 
 ## INSTALLATION
 
-> To compile, on the command line, type
-	make
+> To compile, on the command line, type  
+	make  
 > To run the executable code, on the command line, type
 
 	make run-fifo	      --> to run FIFO algorithm
@@ -31,5 +31,5 @@ Vy Tran  tranv33@mymacewan.ca
 	python3 plotData.py 3 --> to plot round-robin data
 	python3 plotData.py 4 --> to plot MLFQ data
 
-> To clean, type
+> To clean, type  
 	make clean
