@@ -79,7 +79,11 @@ void swapEntries(Entry* entry1, Entry* entry2);
 
 void selectionSortByProctime(EntryList* entryList);
 
+void selectionSortByArrivalTime(EntryList* entryList);
+
 void resetProcessesToOriginalQueues(EntryList* runningQueue, EntryList* queue1, EntryList* queue2, EntryList* queue3, EntryList* queue4, EntryList* queue5);
+
+void resetQueues(EntryList* queue1, EntryList* queue2, EntryList* queue3, EntryList* queue4, EntryList* queue5);
 
 
 #endif

@@ -8,8 +8,8 @@ import sys
 """===========================================================================
 Description: This file plots the data of the log file
 Authors    : Salah Mohamed & Vy Tran
-Date       : 26 February 2024
-Version    : 12
+Date       : 29 February 2024
+Version    : 13
 ============================================================================"""
 
 
@@ -28,29 +28,6 @@ def loadRawData(filename):
     return rawData
 
 
-def controllingKeys(fData):
-	keys = []
-	for k in fData.keys():
-		keys.append(k)
-		
-	keys.reverse()
-		
-	'''n = len(keys)
-    # Traverse through all elements
-	for i in range(n):
-	# Find the minimum element in the unsorted portion
-		minidx = i
-		for j in range(i + 1, n):
-			if keys[j] < keys[minidx]:
-				minidx = j
-			# Swap the found minimum element with the first element
-		keys[i], keys[minidx] = keys[minidx], keys[i]'''
-		
-	fkDict = {} 
-	for element in keys:
-		fkDict[element] = {}
-	return fkDict
-
 def formatData(rData):
     '''Purpose  : Format raw data
     Parameter   : rData
@@ -59,22 +36,17 @@ def formatData(rData):
     for line in rData:
         line = line.split(", ")
         fData[int(line[1])] = {}
-    print("BEFORE", fData)
-    
-    fData = controllingKeys(fData)
-    print("AFTER", fData)
 
     for k in fData.keys():
         kData = {}
-        print("KEY", k)
         for ele in rData:
             ele = ele.split(", ")
            
             if (int(ele[1]) == k) and int(ele[2]) == 2:
                 kData[(ele[9])] = float(ele[5])
         fData[k] = kData
-    print(fData)
     return fData
+
 
 def extractCompleteTime(rData):
     '''Purpose  : Extracting complete time for ratio calculation
@@ -201,7 +173,7 @@ def RRdata(fData):
     time = []
     for i in sameK:  # Round no. not pid
         time = getValuesByKey(fData, i)
-    print(time)
+    #print(time)
     return time
 
 
@@ -260,7 +232,32 @@ def FFdata(fData):
     return time
 
 
-def plotData(type, fData, tComplete, averageTime):
+def MLFQdata(rData):
+    '''Purpose  : Getting data to plot (MLFQ)
+    Parameter   : rData
+    Return      : result'''
+
+    results = []
+    for line in rData:
+        line_data = line.split(", ")
+        
+        status = int(line_data[2])
+        cputime = float(line_data[4])
+        cputimeSlice = float(line_data[5])
+        proctime = float(line_data[6])
+        time_jiffy = float(line_data[12])
+        
+        
+        
+        
+        if ((status == 2 and cputimeSlice == time_jiffy) or (status == 2 and cputime == proctime)):
+            results.append(float(line_data[5]))
+            results.append(int(line_data[1]))
+
+    return results
+
+
+def plotData(type, rData, fData, tComplete, averageTime):
     '''Purpose  : Plotting the data
     Parameter   : fData
     Return      : none'''
@@ -284,7 +281,9 @@ def plotData(type, fData, tComplete, averageTime):
 
     # Time Data to plot
     time = []
-    if type == 3:
+    if type == 4:
+        time = MLFQdata(rData)
+    elif type == 3:
         time = RRdata(fData)
     elif type == 2:
         time = SJFdata(fData)
@@ -401,15 +400,16 @@ def runningFunctions(type, filename):
     Parameter   : type, filename
     Return      : none'''
 
-    rData = loadRawData(filename)
-    fData = formatData(rData)
-    cTime = extractCompleteTime(rData)
-    rawValue = loadTimeInfo(filename)
-    resValue = formatResponseTimeInfo(rawValue)
-    turnValue = formatTurnaroundTimeInfo(rawValue)
+    rData         = loadRawData(filename)
+    fData         = formatData(rData)
+    fDataMLFQ     = MLFQdata(rData)
+    cTime         = extractCompleteTime(rData)
+    rawValue      = loadTimeInfo(filename)
+    resValue      = formatResponseTimeInfo(rawValue)
+    turnValue     = formatTurnaroundTimeInfo(rawValue)
     averageValues = averageCalculation(resValue, turnValue)
 
-    plotData(type, fData, cTime, averageValues)
+    plotData(type, rData, fData, cTime, averageValues)
 
 
 def main():
@@ -418,12 +418,21 @@ def main():
     Return      : none'''
 
     if len(sys.argv) != 2:
-        print(f"\nUsage: {sys.argv[0]} <type of algorithm>")
-        print(f"FIFO: 1; SJF: 2; Round-Robin: 3")
+        print(f"\nUsage: {sys.argv[0]} <type of algorithm [int]>")
+        print(f"FIFO: 1; SJF: 2; Round-Robin: 3; MLFQ: 4")
     else:
         type = int(sys.argv[1])
-        if type == 3:   # ROUND-ROBIN
+        
+        if type == 4:   # MLFQ
             file1 = find_file("../log/MLFQLog.txt")
+            if len(file1) == 0:
+                print("Error! There's no file.")
+            else:
+                filename      = file1[0]
+                runningFunctions(type, filename)
+                
+        elif type == 3:   # ROUND-ROBIN
+            file1 = find_file("../log/roundrobinLog.txt")
             if len(file1) == 0:
                 print("Error! There's no file.")
             else:
