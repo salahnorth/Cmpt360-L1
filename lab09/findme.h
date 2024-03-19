@@ -11,7 +11,7 @@
 
 // Function prototypes.
 
-int readFromFile(const char *path, int filetype, int maxdepth,char* username, char* filename);
+int readFromFile(char *path, int filetype,char* filename, char* username, int maxdepth);
 int fileSystemTests(char *filename);
 
 #endif
