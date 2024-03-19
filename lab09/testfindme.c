@@ -7,17 +7,24 @@
 
 int main(int argc, char *argv[]) {
     if (argc != 6) {
-        printf("Usage: %s <starting directory> <file type> <maxdepth> <username> <file name>\n");
+        printf("Usage: %s <starting directory> <file type> <maxdepth> <username> <file name>\n", argv[0]);
         return 1;
     }
 
-    const char *path = argv[1];
+    char *path = argv[1];
     int filetype = atoi(argv[2]);
-    int maxdepth = atoi(argv[3]);
+    int maxdepth = atoi(argv[5]);
     char *username = argv[4];
-    char *filename = argv[5];
-
-    readFromFile(path, filetype, maxdepth, username, filename);
-
+    char *filename = argv[3];
+	
+    int res;
+    res = readFromFile(path, filetype, filename, username, maxdepth);
+    printf("FILE NAME FROM MAIN %s\n", filename);
+    if(res == 0){
+	printf("NOTHING!\n");
+    }
+    else{
+	    printf("MATCHED! FILE FOUND!\n");
+    }
     return 0;
 }
