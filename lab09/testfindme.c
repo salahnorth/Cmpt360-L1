@@ -18,13 +18,16 @@ int main(int argc, char *argv[]) {
     char *filename = argv[3];
 	
     int res;
-    res = readFromFile(path, filetype, filename, username, maxdepth);
+    /*res = readFromFile(path, filetype, filename, username, maxdepth);
     printf("FILE NAME FROM MAIN %s\n", filename);
+    printf("RESULT FROM readFromFile %i\n", res);
     if(res == 0){
 	printf("NOTHING!\n");
     }
     else{
 	    printf("MATCHED! FILE FOUND!\n");
-    }
+
+    }*/
+    readFromFile(path, filetype, filename, username, maxdepth);
     return 0;
 }
