@@ -13,6 +13,7 @@
 */
 
 int COUNTER2 = 0;
+int counter = 0;
 
 int readFromFile(char *path, int filetype,char* filename,char* username, int maxdepth){
 	COUNTER2 = COUNTER2 + 1;    
@@ -46,10 +47,10 @@ int readFromFile(char *path, int filetype,char* filename,char* username, int max
         return(0);
     }
     
-    int counter = 0;
+    //int counter = 0;
    
-    //int localMaxdepth;
-    //localMaxdepth = maxdepth;
+    int localMaxdepth;
+    localMaxdepth = maxdepth;
 
     //printf("BEFORE THE LOOP; LOCAL MAXDEPTH %i\n", localMaxdepth);
     //printf("BEFORE THE LOOP; MAXDEPTH %i\n", maxdepth);
@@ -61,8 +62,8 @@ int readFromFile(char *path, int filetype,char* filename,char* username, int max
         FILE *fp;
         //temp = lstat(dp->name, statbuf);
         
-        if (lstat(entry->d_name, &statbuf) == -1)
-            continue;
+        //if (lstat(entry->d_name, &statbuf) == -1)
+        //    continue;
             
             /*if((pwd = getpwuid(statbuf.st_uid)) != NULL){
                   printf("USER NAME INSIDE LOOP %s\n", pwd->pw_name);
@@ -83,21 +84,22 @@ int readFromFile(char *path, int filetype,char* filename,char* username, int max
 	filePath = strcpy(filePath, path);
 	strcat(filePath, entry->d_name);
 	
-	printf("\nPath is %s\n", filePath);
+	//printf("\nPath is %s\n", filePath);
 	
 	int file_type = fileSystemTests(filePath);
-	printf("The FILETYPE FROM FUNCTION is %d\n", file_type);
+	//printf("The FILETYPE FROM FUNCTION is %d\n", file_type);
 	printf("FILE PATH BEFORE IF MAXDEPTH %s\n", filePath);
 	if (maxdepth > 0){
-		printf("MAXDEPTH INSIDE %i\n", maxdepth);		
+		//printf("MAXDEPTH INSIDE %i\n", maxdepth);		
 	    if(file_type == 1){
-		printf("FOUND A DIRECTORY\n");
-	//	strcat(filePath, "/");
-		//printf("FILEPATH AFTER FINDING DIRECTORY %s\n", filePath);
+		//printf("FOUND A DIRECTORY\n");
+		strcat(filePath, "/");
+		printf("FILEPATH AFTER FINDING DIRECTORY %s\n", filePath);
 
 	//	filePath = strcpy(filePath, "./dir1/dir1.1/");
-		readFromFile(filePath,filetype,filename, username, maxdepth-1);
-	  	//printf("MAXDEPTH AFTER CALLING FUNCTION AGAIN %i\n", maxdepth);
+		localMaxdepth--;
+		readFromFile(filePath,filetype,filename, username, localMaxdepth);
+	  	printf("MAXDEPTH AFTER CALLING FUNCTION AGAIN %i\n",localMaxdepth);
 		printf("FILEPATH UPDATED %s\n", filePath);
 
 
@@ -106,43 +108,49 @@ int readFromFile(char *path, int filetype,char* filename,char* username, int max
 	    /*if(filetype == 1){
 	          counter++;
 	          if(counter < maxdepth){*/
-		printf("FILE TYPE INPUT %i\n", filetype);
-		printf("FILE WITH DASH %i\n", file_type);
+		//printf("FILE TYPE INPUT %i\n", filetype);
+		//printf("FILE WITH DASH %i\n", file_type);
 	    
 	    if(filetype == 0 && file_type == 0){
-		    printf("GOING INSIDE IF\n");
+		printf("GOING INSIDE IF\n");
 	        fp = fopen(filePath, "r");
+		printf("FILEPATH AFTER GOING INSIDE IF %s\n", filePath);
 	        if(fp == NULL){
 	            printf("Unable to read file\n");
 	        }
 	        else{
-			printf("ENTRY NAME %s\n", entry->d_name);
-			printf("GOING INTO ELSE\n");
-			printf("USER NAME INSIDE ELSE %s\n", filename);
-	  
+			//printf("ENTRY NAME %s\n", entry->d_name);
+			//printf("GOING INTO ELSE\n");
+			//printf("USER NAME INSIDE ELSE %s\n", filename);
+	  		int matchFlag = 0;
 	            if(strcmp(entry->d_name, filename) == 0){
 	
 	                /*pwd = getpwuid(statbuf.st_uid);
 			                
-	                if (pwd != NULL && strcmp(username, pwd->pw_name) == 0){
+	                if (pwd != NULL && strcmp(username, pwd->pw_name) ==
+			0){*/
 	                    printf("MATCHED! Path is %s\n", filePath);
-	                    printf("The MAXDEPTH IS %d\n", maxdepth);
-	                
+	                    //printf("The MAXDEPTH IS %d\n", localMaxdepth);
+			    matchFlag = 1;
+			    
 				//return(1);
-			}
-			else{
+			//}
+			/*else{
 				printf("WRONG USERNAME\n");
 			}*/
-			    printf("YAYA\n");
+			    //printf("YAYA\n");
 	            }
-		    else{
-			    printf("CAN'T FIND ANYTHING\n");
-					
+
+		    if(matchFlag == 1){
+			    printPath(filePath);
+		    }
+		    //else{
+		//	    printf("CAN'T FIND ANYTHING\n");
 	            //free(filePath);
 		    //printf("PATH AFTER %s\n", filePath);
 		    //readFromFile(filePath,filetype, filename, username, maxdepth);
 
-	        }
+	        //}
 	        
 	    }
 	        //maxdepth--;
@@ -156,7 +164,7 @@ int readFromFile(char *path, int filetype,char* filename,char* username, int max
 
 	}	
     closedir(dp);
-//    return(0);
+    //return(0);
  
 }
 
@@ -196,4 +204,9 @@ int fileSystemTests(char *filename){
              return(7);	// Unidentified file type
          }
      }
+}
+
+void printPath(char* path){
+	printf("PRINTING PATH %s\n", path);
+
 }
