@@ -8,6 +8,8 @@
 #include<stdio.h>
 #include<pwd.h>
 
+
+
 /*
 
 */
@@ -59,15 +61,15 @@ int readFromFile(char *path, int filetype,char* filename,char* username, int max
 	printf("\n\nCOUNTER2 is %i\n\n", COUNTER2); 	    
     while((entry = readdir(dp))){
     
-        FILE *fp;
+        FILE *fp1;
         //temp = lstat(dp->name, statbuf);
         
-        //if (lstat(entry->d_name, &statbuf) == -1)
-        //    continue;
+        if (lstat(path, &statbuf) == -1)
+            continue;
             
             /*if((pwd = getpwuid(statbuf.st_uid)) != NULL){
                   printf("USER NAME INSIDE LOOP %s\n", pwd->pw_name);
-	      }
+	     }
 	      else{
 	          printf("UID  %d\n", statbuf.st_uid);
 	      }*/
@@ -75,7 +77,7 @@ int readFromFile(char *path, int filetype,char* filename,char* username, int max
 	    continue;
 	}
 	
-	char *filePath = (char*) malloc(strlen(path) + strlen(entry->d_name));
+	char *filePath = (char*) malloc(strlen(path) + (strlen(entry->d_name)+1));
 	
 	/*char c = '/';
 	char* pt;
@@ -108,42 +110,45 @@ int readFromFile(char *path, int filetype,char* filename,char* username, int max
 	    /*if(filetype == 1){
 	          counter++;
 	          if(counter < maxdepth){*/
-		//printf("FILE TYPE INPUT %i\n", filetype);
-		//printf("FILE WITH DASH %i\n", file_type);
-	    
-	    if(filetype == 0 && file_type == 0){
+		printf("FILE TYPE INPUT %i\n", filetype);
+		printf("FILE WITH DASH %i\n", file_type);
+	   	printf("FILEPATH BEFORE GOING INTO IF filetype == 0 %s\n",filePath); 
+	    if(filetype == file_type){
 		printf("GOING INSIDE IF\n");
-	        fp = fopen(filePath, "r");
+		fp1 = fopen(filePath, "r");
+		printf("ENTRY FILE NAME INSIDE IF %s\n", entry->d_name);
 		printf("FILEPATH AFTER GOING INSIDE IF %s\n", filePath);
-	        if(fp == NULL){
+	        if(fp1 == NULL){
 	            printf("Unable to read file\n");
 	        }
 	        else{
 			//printf("ENTRY NAME %s\n", entry->d_name);
 			//printf("GOING INTO ELSE\n");
 			//printf("USER NAME INSIDE ELSE %s\n", filename);
-	  		int matchFlag = 0;
+	
 	            if(strcmp(entry->d_name, filename) == 0){
 	
-	                /*pwd = getpwuid(statbuf.st_uid);
-			                
+	                pwd = getpwuid(statbuf.st_uid);
+		     printf("\n\n\n\n\n USER NAME IS %s\n\n\n\n\n", pwd->pw_name);	
 	                if (pwd != NULL && strcmp(username, pwd->pw_name) ==
-			0){*/
+			0){
 	                    printf("MATCHED! Path is %s\n", filePath);
 	                    //printf("The MAXDEPTH IS %d\n", localMaxdepth);
-			    matchFlag = 1;
-			    
+			   printPath(filePath);
+			    free(filePath);
 				//return(1);
-			//}
-			/*else{
+			}
+			else{
 				printf("WRONG USERNAME\n");
-			}*/
+			}
 			    //printf("YAYA\n");
 	            }
+		    //else{
+		//	free(filePath);
+		  //  }
 
-		    if(matchFlag == 1){
-			    printPath(filePath);
-		    }
+
+		
 		    //else{
 		//	    printf("CAN'T FIND ANYTHING\n");
 	            //free(filePath);
@@ -158,10 +163,12 @@ int readFromFile(char *path, int filetype,char* filename,char* username, int max
 	        //printf("THE END OF LOOP; COUNTER %i\n", counter);
 	        //readFromFile(path,filetype,maxdepth,username,filename);
         }
+
+
 	}
 	counter++;
 	printf("\n\nROUND NUMBER %i\n\n", counter);
-
+	//free(filePath);
 	}	
     closedir(dp);
     //return(0);
