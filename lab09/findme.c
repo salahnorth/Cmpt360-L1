@@ -126,7 +126,7 @@ int readFromFile(char *path, int filetype,char* filename,char* username, int max
 			//printf("GOING INTO ELSE\n");
 			//printf("USER NAME INSIDE ELSE %s\n", filename);
 	
-	            if(strcmp(entry->d_name, filename) == 0){
+	            if((strcmp(entry->d_name, filename) == 0) || filename == "DEFAULT");{
 	
 	                pwd = getpwuid(statbuf.st_uid);
 		     printf("\n\n\n\n\n USER NAME IS %s\n\n\n\n\n", pwd->pw_name);	
