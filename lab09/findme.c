@@ -77,13 +77,14 @@ int readFromFile(char *path, int filetype,char* filename,char* username, int max
 	    continue;
 	}
 	
-	char *filePath = (char*) malloc(strlen(path) + (strlen(entry->d_name)+1));
+	char *filePath = (char*) malloc((strlen(path)+1) + (strlen(entry->d_name)+1));
 	
 	/*char c = '/';
 	char* pt;
 	pt = &c;*/
 		
 	filePath = strcpy(filePath, path);
+	strcat(filePath, "/");
 	strcat(filePath, entry->d_name);
 	
 	//printf("\nPath is %s\n", filePath);
@@ -95,7 +96,7 @@ int readFromFile(char *path, int filetype,char* filename,char* username, int max
 		//printf("MAXDEPTH INSIDE %i\n", maxdepth);		
 	    if(file_type == 1){
 		//printf("FOUND A DIRECTORY\n");
-		strcat(filePath, "/");
+		//strcat(filePath, "/");
 		printf("FILEPATH AFTER FINDING DIRECTORY %s\n", filePath);
 
 	//	filePath = strcpy(filePath, "./dir1/dir1.1/");
