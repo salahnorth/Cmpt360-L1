@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     struct stat statbuf;
     struct passwd *pwd;
 
-    char *path = NULL;
+    char *path = "./";
     
     lstat(path, &statbuf);
     
