@@ -18,16 +18,9 @@ int main(int argc, char *argv[]) {
         printf("Usage: %s <starting directory> <file type> <file name> <user name> <maxdepth>\n", argv[0]);
         return 1;
     }*/
-    
-    
-    
-    
+
     struct stat statbuf;
     struct passwd *pwd;
-        
-    
-    
-    
 
     char *path = NULL;
     
@@ -37,22 +30,22 @@ int main(int argc, char *argv[]) {
         
     char* username = pwd->pw_name;
     
-    int exfType = fileSystemTests("findme.c");
-    printf("FILE TYPE EXAMPLE IS %i\n", exfType);
     
     char* filetype = "z";
  
     int maxdepth = INT_MAX;
-    //char *username = NULL;
-    char *filename = NULL;
+    char *filename = "";
     int fType;
-    printf("\n\n\n\n\n\n\nFILE TYPE IN TEST %s\n", filetype);
     
     int flag = 0;
     
     for (int i =0; i < argc; i++){
     
         if (strcmp(argv[i], "find") == 0){
+        
+            if (argc == 2){
+                break;
+            }
             path = argv[i+1];
         }
         
@@ -82,23 +75,15 @@ int main(int argc, char *argv[]) {
         }
         
     }
-        
-        
-        
-	
-	//./lab9 -type f
-	
-	
-	
-	
+    
 	//int flag = 0;
-	char c1 = '/';
+	/*char c1 = '/';
 	char* pt;
-	pt = &c1;
+	pt = &c1;*/
 	
 	
-	replace(path, pt); 
-	printf("Changing path %s\n", path);
+	//replace(path, pt); 
+	//printf("Changing path %s\n", path);
 
 
 	if(*filetype == 'f'){
@@ -122,17 +107,17 @@ int main(int argc, char *argv[]) {
 	   
 	}
 
-    printf("PATH is %s\n", path);
+    /*printf("PATH is %s\n", path);
     printf("FILETYPE is %s\n", filetype);
     printf("FILENAME is %s\n", filename);
     printf("USERNAME is %s\n", username);
     printf("MAXDEPTH is %i\n", maxdepth);
-    //printf("AFTER TESTING FILE TYPE %i\n", fType);
+    //printf("AFTER TESTING FILE TYPE %i\n", fType);*/
     readFromFile(path, fType, filename, username, maxdepth);
     return 0;
 }
 
-
+/*
 void replace(char* s, char* c){
 	int counter = 0;
 	for(int i=0; s[i] != '\0'; i++){
@@ -144,4 +129,4 @@ void replace(char* s, char* c){
 			s[strlen(s) -1] = '\0';
 		}
 	}
-}
+}*/
