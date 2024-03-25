@@ -11,7 +11,8 @@
 
 // Function prototypes.
 
-int readFromFile(char *path, int filetype,char* filename, char* username, int maxdepth);
+int findFile(char *path, int filetype,char* filename, char* username, int maxdepth);
+int get_fileType(char *path, char* filename);
 int fileSystemTests(char *filename);
 void printPath(char*);
 #endif

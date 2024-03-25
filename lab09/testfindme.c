@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
             
                 filename = argv[i+1];
                 stat(path, &fileStat);
-                fType = fileSystemTests(filename);
+                fType = get_fileType(path, filename);
             
                 if (filename != NULL) {
                     flag = 1;
@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
     printf("USERNAME is %s\n", username);
     printf("MAXDEPTH is %i\n", maxdepth);
     //printf("AFTER TESTING FILE TYPE %i\n", fType);*/
-    readFromFile(path, fType, filename, username, maxdepth);
+    findFile(path, fType, filename, username, maxdepth);
     return 0;
 }
 

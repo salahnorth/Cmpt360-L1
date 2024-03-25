@@ -17,7 +17,7 @@
 
 int cycle = 0;
 
-int readFromFile(char *path, int filetype,char* filename,char* username, int maxdepth){
+int findFile(char *path, int filetype,char* filename,char* username, int maxdepth){
     cycle ++;
     
     struct dirent *entry;
@@ -70,7 +70,7 @@ int readFromFile(char *path, int filetype,char* filename,char* username, int max
 	    if(filetypeFromTest == 1){
 	
 	        //localMaxdepth--;
-                readFromFile(filePath,filetype,filename, username, maxdepth - 1);
+                findFile(filePath,filetype,filename, username, maxdepth - 1);
 	    }
 	
 	    if(filetype == filetypeFromTest || filetype == DEFAULT_FILETYPE){
@@ -95,11 +95,13 @@ int readFromFile(char *path, int filetype,char* filename,char* username, int max
                         
                         else{
 			    printf("Cant access, wrong username\n");
+			    return 1;
 	                }
                     }
                     
                     else{
 	                printf("Cant access, stat file error\n");
+	                return 1;
 	                
 	            }
 	            
@@ -114,6 +116,102 @@ int readFromFile(char *path, int filetype,char* filename,char* username, int max
 	    }
 
         }
+        
+    }
+	
+    closedir(dp);
+    return 0;
+ 
+}
+
+int get_fileType(char *path, char* filename){
+    cycle ++;
+    
+    struct dirent *entry;
+    DIR *dp;
+    
+    struct stat statbuf;
+    
+    dp = opendir(path);
+    
+    if(dp == NULL){
+        perror("opendir");
+        return 0;
+    }
+    
+    if(stat(path, &statbuf) == -1){
+         perror("stat failed");
+         exit(EXIT_FAILURE);
+         return 0;
+     }
+   
+    //int localMaxdepth;
+    //localMaxdepth = maxdepth;
+
+    //printf("\nCycle = %d\n", cycle);
+            	    
+    while((entry = readdir(dp))){
+    
+        if(stat(path, &statbuf) == -1)
+            continue;
+    
+        FILE *fp1;
+
+	if(strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0){
+	    continue;
+	}
+	
+	char *filePath = (char*) malloc((strlen(path)+1) + (strlen(entry->d_name)+1));
+	
+	filePath = strcpy(filePath, path);
+	strcat(filePath, "/");
+	strcat(filePath, entry->d_name);
+	
+	//snprintf(filePath, sizeof(filePath), "%s/%s", path, entry->d_name);
+	
+	int filetypeFromTest = fileSystemTests(filePath);
+	
+
+	
+	    if(filetypeFromTest == 1 && strcmp(entry->d_name, filename) != 0){
+	
+	        //localMaxdepth--;
+                get_fileType(filePath, filename);
+	    }
+	
+	    else{
+	    
+	        fp1 = fopen(filePath, "r");
+
+	        if(fp1 == NULL){
+	            continue;
+	        }
+	        else{
+
+	            struct stat fileStat;
+                    if (stat(filePath, &fileStat) == 0){
+                        
+                        
+                            if (strcmp(entry->d_name, filename) == 0){
+			        free(filePath);
+			        return filetypeFromTest;
+                            }
+                        
+                        
+                        
+                    }
+	            
+                    fclose(fp1);
+                    
+			
+			
+	        }
+	            
+
+	        
+	    }
+
+        
         
     }
 	
