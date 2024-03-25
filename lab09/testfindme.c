@@ -9,22 +9,22 @@
 #include<sys/types.h>
 #include<pwd.h>
 
-
-
 void replace(char*, char*);
 
 int main(int argc, char *argv[]) {
-    /*(if (argc != 6) {
-        printf("Usage: %s <starting directory> <file type> <file name> <user name> <maxdepth>\n", argv[0]);
+    if (argc < 2) {
+        printf("Usage: %s <starting directory> [<options>]\n", argv[0]);
         return 1;
-    }*/
+    }
+    
 
     struct stat statbuf;
     struct passwd *pwd;
+    struct stat fileStat;
 
-    char *path = "./";
+    char *path = ".";
     
-    lstat(path, &statbuf);
+    stat(path, &statbuf);
     
     pwd = getpwuid(statbuf.st_uid);
         
@@ -34,46 +34,73 @@ int main(int argc, char *argv[]) {
     char* filetype = "z";
  
     int maxdepth = INT_MAX;
-    char *filename = "";
+    char* filename = "";
     int fType;
     
     int flag = 0;
     
-    for (int i =0; i < argc; i++){
+    for (int i = 1; i < argc; i += 1) {
     
-        if (strcmp(argv[i], "find") == 0){
+        if (strcmp(argv[i], "find") == 0) {
         
-            if (argc == 2){
-                break;
+            if (argc <= 2) break;
+        
+            else if (!((argv[i+1][0] == '.' && argv[i+1][1] == '/') || (argv[i+1][0] == '/') || (argv[i+1][0] == '-'))) {
+                fprintf(stderr, "Invalid argument to find.\n");
+                exit(EXIT_FAILURE);
+}
+            
+            else if (argc > 2 && (argv[i+1][0] == '/' || (argv[i+1][0] == '.' && argv[i+1][1] == '/'))){  
+                path = argv[i+1];
             }
-            path = argv[i+1];
-        }
-        
-        if (strcmp(argv[i], "-type") == 0){
-            filetype = argv[i+1];
-        }
-        
-        if (strcmp(argv[i], "-name") == 0){
-            filename = argv[i+1];
+                
+        } else if (strcmp(argv[i], "-type") == 0) {
+            if (i+1 >= argc) {
             
-            fType = fileSystemTests(filename);
-            printf("AFTER TESTING FILE TYPE %i\n", fType);
-            
-            if(filename != NULL){
-                flag = 1;
-                printf("GOING TO FILENAME IF!!!!\n");
+                fprintf(stderr, "Invalid argument to -type.\n");
+                exit(EXIT_FAILURE);
             }
             
+            else{
+                filetype = argv[i+1];
+            }
+            
+        } else if (strcmp(argv[i], "-name") == 0) {
+            if (i+1 >= argc) {
+            
+                fprintf(stderr, "Invalid argument to -name.\n");
+                exit(EXIT_FAILURE);
+            }
+            
+            else{
+            
+                filename = argv[i+1];
+                stat(path, &fileStat);
+                fType = fileSystemTests(filename);
+            
+                if (filename != NULL) {
+                    flag = 1;
+                }
+            }
+            
+        } else if (strcmp(argv[i], "-maxdepth") == 0) {
+            if (i+1 >= argc) {
+            
+                fprintf(stderr, "Invalid argument to -maxdepth.\n");
+                exit(EXIT_FAILURE);
+            }
+            
+            else maxdepth = atoi(argv[i + 1]);
+            
+        } else if (strcmp(argv[i], "-user") == 0) {
+            if (i+1 >= argc) {
+            
+                fprintf(stderr, "Invalid argument to -user.\n");
+                exit(EXIT_FAILURE);
+            }
+            
+            else username = argv[i + 1];
         }
-        
-        if (strcmp(argv[i], "-maxdepth") == 0){
-            maxdepth = atoi(argv[i+1]);
-        }
-        
-        if (strcmp(argv[i], "-user") == 0){
-            username = argv[i+1];
-        }
-        
     }
     
 	//int flag = 0;
@@ -106,9 +133,10 @@ int main(int argc, char *argv[]) {
 	    fType = 5;
 	   
 	}
+    
 
     /*printf("PATH is %s\n", path);
-    printf("FILETYPE is %s\n", filetype);
+    printf("FILETYPE is %d\n", fType);
     printf("FILENAME is %s\n", filename);
     printf("USERNAME is %s\n", username);
     printf("MAXDEPTH is %i\n", maxdepth);

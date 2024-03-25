@@ -20,10 +20,6 @@ int cycle = 0;
 int readFromFile(char *path, int filetype,char* filename,char* username, int maxdepth){
     cycle ++;
     
-    //printf("Cycle=%d, path=%s, maxdepth=%d\n", cycle, path, maxdepth);
-    
-
-    
     struct dirent *entry;
     DIR *dp;
     
