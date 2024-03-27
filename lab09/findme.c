@@ -8,23 +8,17 @@
 #include<stdio.h>
 #include<pwd.h>
 #include "findme.h"
+#include <sys/wait.h>
 
-#define DEFAULT_FILETYPE 5
-
-/*
-
-*/
-
-int cycle = 0;
 
 int findFile(char *path, int filetype,char* filename,char* username, int maxdepth){
-    cycle ++;
+
+    int rootFlag = 0;
     
     struct dirent *entry;
     DIR *dp;
     
     struct stat statbuf;
-    //struct passwd *pwd;
     
     dp = opendir(path);
     
@@ -38,13 +32,9 @@ int findFile(char *path, int filetype,char* filename,char* username, int maxdept
          exit(EXIT_FAILURE);
          return 0;
      }
-   
-    //int localMaxdepth;
-    //localMaxdepth = maxdepth;
-
-    //printf("\nCycle = %d\n", cycle);
             	    
     while((entry = readdir(dp))){
+    
     
         if(stat(path, &statbuf) == -1)
             continue;
@@ -58,20 +48,45 @@ int findFile(char *path, int filetype,char* filename,char* username, int maxdept
 	char *filePath = (char*) malloc((strlen(path)+1) + (strlen(entry->d_name)+1));
 	
 	filePath = strcpy(filePath, path);
-	strcat(filePath, "/");
-	strcat(filePath, entry->d_name);
 	
-	//snprintf(filePath, sizeof(filePath), "%s/%s", path, entry->d_name);
+	if (strcmp(filePath, "/") == 0){
+	     rootFlag = 1;
+	}
+	
+	if (rootFlag == 0){
+	    strcat(filePath, "/");
+	    strcat(filePath, entry->d_name);
+	}
+	else if(rootFlag != 0){
+	    strcat(filePath, entry->d_name);
+	}
 	
 	int filetypeFromTest = fileSystemTests(filePath);
 	
 	if(maxdepth > 0){
 	
-	    if(filetypeFromTest == 1){
 	
-	        //localMaxdepth--;
-                findFile(filePath,filetype,filename, username, maxdepth - 1);
+	    if(filetypeFromTest == 1){
+	    
+	        
+	    
+	        pid_t pid = fork();
+	        if (pid == -1){
+	            perror("fork");
+	            exit(EXIT_FAILURE);
+	            
+	        }
+	        else if (pid == 0){
+	        
+	            //closedir(dp);
+	            findFile(filePath,filetype,filename, username, maxdepth - 1);
+	            closedir(dp);
+	            exit(EXIT_SUCCESS);
+	        }
+	    
 	    }
+	    
+
 	
 	    if(filetype == filetypeFromTest || filetype == DEFAULT_FILETYPE){
 	    
@@ -88,9 +103,12 @@ int findFile(char *path, int filetype,char* filename,char* username, int maxdept
                         
                         if (pwd != NULL && strcmp(username, pwd->pw_name) == 0) {
                             if (strcmp(entry->d_name, filename) == 0 || strcmp(filename, "") == 0){
+                            	
                                 printPath(filePath);
 			        free(filePath);
                             }
+                           
+
                         }
                         
                         else{
@@ -104,11 +122,10 @@ int findFile(char *path, int filetype,char* filename,char* username, int maxdept
 	                return 1;
 	                
 	            }
-	            
+
                     fclose(fp1);
                     
-			
-			
+
 	        }
 	            
 
@@ -120,12 +137,13 @@ int findFile(char *path, int filetype,char* filename,char* username, int maxdept
     }
 	
     closedir(dp);
+    while (wait(NULL) > 0);
+    
     return 0;
  
 }
 
 int get_fileType(char *path, char* filename){
-    cycle ++;
     
     struct dirent *entry;
     DIR *dp;
@@ -145,10 +163,6 @@ int get_fileType(char *path, char* filename){
          return 0;
      }
    
-    //int localMaxdepth;
-    //localMaxdepth = maxdepth;
-
-    //printf("\nCycle = %d\n", cycle);
             	    
     while((entry = readdir(dp))){
     
@@ -167,15 +181,12 @@ int get_fileType(char *path, char* filename){
 	strcat(filePath, "/");
 	strcat(filePath, entry->d_name);
 	
-	//snprintf(filePath, sizeof(filePath), "%s/%s", path, entry->d_name);
-	
 	int filetypeFromTest = fileSystemTests(filePath);
 	
 
 	
 	    if(filetypeFromTest == 1 && strcmp(entry->d_name, filename) != 0){
 	
-	        //localMaxdepth--;
                 get_fileType(filePath, filename);
 	    }
 	
@@ -196,8 +207,7 @@ int get_fileType(char *path, char* filename){
 			        free(filePath);
 			        return filetypeFromTest;
                             }
-                        
-                        
+
                         
                     }
 	            
@@ -211,8 +221,7 @@ int get_fileType(char *path, char* filename){
 	        
 	    }
 
-        
-        
+
     }
 	
     closedir(dp);
@@ -262,3 +271,6 @@ void printPath(char* path){
 	printf("%s\n", path);
 
 }
+
+
+

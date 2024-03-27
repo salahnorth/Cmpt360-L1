@@ -8,8 +8,9 @@
 #include<sys/stat.h>
 #include<sys/types.h>
 #include<pwd.h>
+#include <pthread.h>
 
-void replace(char*, char*);
+void replaceStr(char*, char*);
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -22,7 +23,7 @@ int main(int argc, char *argv[]) {
     struct passwd *pwd;
     struct stat fileStat;
 
-    char *path = ".";
+    char *path = NULL;
     
     stat(path, &statbuf);
     
@@ -37,22 +38,35 @@ int main(int argc, char *argv[]) {
     char* filename = "";
     int fType;
     
-    int flag = 0;
+    int fileFlag = 0;
+    
+    int findFlag = 0;
     
     for (int i = 1; i < argc; i += 1) {
     
+        if (argc <= 2) {
+     		path = ".";   
+        	break;
+    }
         if (strcmp(argv[i], "find") == 0) {
-        
-            if (argc <= 2) break;
-        
-            else if (!((argv[i+1][0] == '.' && argv[i+1][1] == '/') || (argv[i+1][0] == '/') || (argv[i+1][0] == '-'))) {
+
+	    if (argv[2][0] == '-'){
+	        path = ".";
+	        findFlag = 1;
+	 
+	    }
+	    else if ((argv[2][0] == '/' || argv[2][0] == '.')){  
+                path = argv[2];
+            }
+           
+
+            else if (((argv[2][0] != '.' && argv[2][0] != '/')|| (argv[3][0] != '-')) && findFlag == 0) {
+
+                
                 fprintf(stderr, "Invalid argument to find.\n");
                 exit(EXIT_FAILURE);
-}
+	}	
             
-            else if (argc > 2 && (argv[i+1][0] == '/' || (argv[i+1][0] == '.' && argv[i+1][1] == '/'))){  
-                path = argv[i+1];
-            }
                 
         } else if (strcmp(argv[i], "-type") == 0) {
             if (i+1 >= argc) {
@@ -79,7 +93,7 @@ int main(int argc, char *argv[]) {
                 fType = get_fileType(path, filename);
             
                 if (filename != NULL) {
-                    flag = 1;
+                    fileFlag = 1;
                 }
             }
             
@@ -103,14 +117,11 @@ int main(int argc, char *argv[]) {
         }
     }
     
-	//int flag = 0;
-	/*char c1 = '/';
-	char* pt;
-	pt = &c1;*/
-	
-	
-	//replace(path, pt); 
-	//printf("Changing path %s\n", path);
+        char c1 = '/';
+        char* pt;
+        pt = &c1;
+    
+        replaceStr(path, pt);
 
 
 	if(*filetype == 'f'){
@@ -129,32 +140,30 @@ int main(int argc, char *argv[]) {
 		fType = 4;
 	}
 	
-	else if(*filetype == 'z' && flag == 0){
+	else if(*filetype == 'z' && fileFlag == 0){
 	    fType = 5;
 	   
 	}
-    
-
-    /*printf("PATH is %s\n", path);
-    printf("FILETYPE is %d\n", fType);
-    printf("FILENAME is %s\n", filename);
-    printf("USERNAME is %s\n", username);
-    printf("MAXDEPTH is %i\n", maxdepth);
-    //printf("AFTER TESTING FILE TYPE %i\n", fType);*/
+	
+	
     findFile(path, fType, filename, username, maxdepth);
     return 0;
 }
 
-/*
-void replace(char* s, char* c){
-	int counter = 0;
-	for(int i=0; s[i] != '\0'; i++){
-		printf("GOING IN FOR\n");
-		if(s[i] != *c){
-			continue;
-		}
-		if(s[strlen(s) - 1] == *c){
-			s[strlen(s) -1] = '\0';
-		}
-	}
-}*/
+void replaceStr(char* s, char* c){
+         int counter = 0;
+         for(int i=0; s[i] != '\0'; i++){
+                 printf("GOING IN FOR\n");
+                if(s[i] != *c){
+                         continue;
+               }
+               if(strlen(s) != 1){
+                	if(s[strlen(s) - 1] == *c){
+                        	 s[strlen(s) -1] = '\0';
+                 	}
+                 	}
+                 else{
+                 	
+                 }
+         }
+}
