@@ -16,6 +16,7 @@
   */
 int findFile(char *path, int filetype,char* filename,char* username, int maxdepth){
 
+    // Flag to identify if it is a root directory
     int rootFlag = 0;
     
     struct dirent *entry;
@@ -23,35 +24,41 @@ int findFile(char *path, int filetype,char* filename,char* username, int maxdept
     
     struct stat statbuf;
     
+    // Open the directory
     dp = opendir(path);
     
+    // Check if directory can be opened
     if(dp == NULL){
         perror("opendir");
         return 0;
     }
     
+    // Get the status of the path
     if(stat(path, &statbuf) == -1){
          perror("stat failed");
          exit(EXIT_FAILURE);
          return 0;
      }
             	    
+    // Loop through the entries in the directory
     while((entry = readdir(dp))){
         if(stat(path, &statbuf) == -1)
             continue;
     
         FILE *fp1;
 
+        // Skip hidden files
 	if(strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0){
 	    continue;
 	}
 	
+	// Constructing the filePath
 	char *filePath = (char*) malloc((strlen(path)+1) + (strlen(entry->d_name)+1));
 	
 	filePath = strcpy(filePath, path);
 	
 	if (strcmp(filePath, "/") == 0){
-	     rootFlag = 1;
+	     rootFlag = 1; // Constructing the filepath without / at the end for root directory
 	}
 	
 	if (rootFlag == 0){
@@ -62,9 +69,12 @@ int findFile(char *path, int filetype,char* filename,char* username, int maxdept
 	    strcat(filePath, entry->d_name);
 	}
 	
+	// Obtain file type from a file
 	int filetypeFromTest = fileSystemTests(filePath);
 	
 	if(maxdepth > 0){
+	
+	    // Fork a child process for recursively traversing directory
 	    if(filetypeFromTest == 1){
 	        pid_t pid = fork();
 	        if (pid == -1){
@@ -79,6 +89,8 @@ int findFile(char *path, int filetype,char* filename,char* username, int maxdept
 	        }
 	    
 	    }
+	    
+	    // Print out the matched filepaths
 	    if(filetype == filetypeFromTest || filetype == DEFAULT_FILETYPE){
 	    
 	        fp1 = fopen(filePath, "r");
@@ -138,43 +150,51 @@ int get_fileType(char *path, char* filename){
     
     struct stat statbuf;
     
+    // Open the directory
     dp = opendir(path);
     
+    // Check if directory can be opened
     if(dp == NULL){
         perror("opendir");
         return 0;
     }
     
+    // Get the status of the path
     if(stat(path, &statbuf) == -1){
          perror("stat failed");
          exit(EXIT_FAILURE);
          return 0;
      }
     
+    // Loop through the entries in the directory
     while((entry = readdir(dp))){
         if(stat(path, &statbuf) == -1)
             continue;
     
         FILE *fp1;
 
+        // Skip hidden files
 	if(strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0){
 	    continue;
 	}
 	
+	// Constructing the filePath
 	char *filePath = (char*) malloc((strlen(path)+1) + (strlen(entry->d_name)+1));
 	
 	filePath = strcpy(filePath, path);
 	strcat(filePath, "/");
 	strcat(filePath, entry->d_name);
 	
+	// Obtain file type from a file
 	int filetypeFromTest = fileSystemTests(filePath);
 	
-	
+	    // Traverse through the directory if its not the matched directory
 	    if(filetypeFromTest == 1 && strcmp(entry->d_name, filename) != 0){
 	
                 get_fileType(filePath, filename);
 	    }
 	
+	    // Else, print out the matched filepaths
 	    else{
 	    
 	        fp1 = fopen(filePath, "r");
@@ -248,7 +268,6 @@ void printPath(char* path){
 	printf("%s\n", path);
 
 }
-
 
 /**
   *@brief manipulating input string for convenience

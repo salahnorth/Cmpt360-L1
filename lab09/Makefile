@@ -15,5 +15,3 @@ clean:
 	rm -f *.o $(target)
 conform:
 	./indent -linux *.c -o *.c
-run:
-	./$(target)
