@@ -1,16 +1,19 @@
 #include<dirent.h>
 #include<unistd.h>
-#include<getopt.h>
 #include<string.h>
 #include<sys/stat.h>
 #include<sys/types.h>
 #include<stdlib.h>
 #include<stdio.h>
 #include<pwd.h>
-#include "findme.h"
-#include <sys/wait.h>
+#include<sys/wait.h>
+#include"findme.h"
 
-
+/**
+  *@brief Searching for a specific file
+  *@param path, filetype, filename, username, maxdepth
+  *@return 0 or 1
+  */
 int findFile(char *path, int filetype,char* filename,char* username, int maxdepth){
 
     int rootFlag = 0;
@@ -34,8 +37,6 @@ int findFile(char *path, int filetype,char* filename,char* username, int maxdept
      }
             	    
     while((entry = readdir(dp))){
-    
-    
         if(stat(path, &statbuf) == -1)
             continue;
     
@@ -64,12 +65,7 @@ int findFile(char *path, int filetype,char* filename,char* username, int maxdept
 	int filetypeFromTest = fileSystemTests(filePath);
 	
 	if(maxdepth > 0){
-	
-	
 	    if(filetypeFromTest == 1){
-	    
-	        
-	    
 	        pid_t pid = fork();
 	        if (pid == -1){
 	            perror("fork");
@@ -77,17 +73,12 @@ int findFile(char *path, int filetype,char* filename,char* username, int maxdept
 	            
 	        }
 	        else if (pid == 0){
-	        
-	            //closedir(dp);
 	            findFile(filePath,filetype,filename, username, maxdepth - 1);
 	            closedir(dp);
 	            exit(EXIT_SUCCESS);
 	        }
 	    
 	    }
-	    
-
-	
 	    if(filetype == filetypeFromTest || filetype == DEFAULT_FILETYPE){
 	    
 	        fp1 = fopen(filePath, "r");
@@ -96,39 +87,31 @@ int findFile(char *path, int filetype,char* filename,char* username, int maxdept
 	            continue;
 	        }
 	        else{
-
 	            struct stat fileStat;
                     if (stat(filePath, &fileStat) == 0){
                         struct passwd *pwd = getpwuid(fileStat.st_uid);
                         
                         if (pwd != NULL && strcmp(username, pwd->pw_name) == 0) {
-                            if (strcmp(entry->d_name, filename) == 0 || strcmp(filename, "") == 0){
-                            	
+                            if (strcmp(entry->d_name, filename) == 0 || strcmp(filename, "") == 0){       	
                                 printPath(filePath);
 			        free(filePath);
                             }
-                           
-
                         }
                         
                         else{
-			    printf("Cant access, wrong username\n");
+			    printf("Can't access, wrong username\n");
 			    return 1;
 	                }
                     }
                     
                     else{
-	                printf("Cant access, stat file error\n");
+	                printf("Can't access, stat file error\n");
 	                return 1;
 	                
 	            }
 
                     fclose(fp1);
-                    
-
 	        }
-	            
-
 	        
 	    }
 
@@ -137,12 +120,17 @@ int findFile(char *path, int filetype,char* filename,char* username, int maxdept
     }
 	
     closedir(dp);
-    while (wait(NULL) > 0);
-    
+    while (wait(NULL) > 0); // Wait for child processes to finish
     return 0;
  
 }
 
+
+/**
+  *@brief Handling filename and path to check the input file's type (loop)
+  *@param path, filename
+  *@return -1, 0, 1, 2, 3, 4, 5, 6, 7 
+  */
 int get_fileType(char *path, char* filename){
     
     struct dirent *entry;
@@ -162,10 +150,8 @@ int get_fileType(char *path, char* filename){
          exit(EXIT_FAILURE);
          return 0;
      }
-   
-            	    
-    while((entry = readdir(dp))){
     
+    while((entry = readdir(dp))){
         if(stat(path, &statbuf) == -1)
             continue;
     
@@ -183,7 +169,6 @@ int get_fileType(char *path, char* filename){
 	
 	int filetypeFromTest = fileSystemTests(filePath);
 	
-
 	
 	    if(filetypeFromTest == 1 && strcmp(entry->d_name, filename) != 0){
 	
@@ -198,30 +183,16 @@ int get_fileType(char *path, char* filename){
 	            continue;
 	        }
 	        else{
-
 	            struct stat fileStat;
                     if (stat(filePath, &fileStat) == 0){
-                        
-                        
                             if (strcmp(entry->d_name, filename) == 0){
 			        free(filePath);
 			        return filetypeFromTest;
-                            }
-
-                        
+                            }   
                     }
-	            
-                    fclose(fp1);
-                    
-			
-			
-	        }
-	            
-
-	        
+                    fclose(fp1);   	
+	        }   
 	    }
-
-
     }
 	
     closedir(dp);
@@ -230,12 +201,11 @@ int get_fileType(char *path, char* filename){
 }
 
 
-
- /**
-   *@brief Check file type
-   *@param filename
-   *@return -1, 0, 1, 2, 3, 4, 5, 6, 7
-   */
+/**
+  *@brief Check file type
+  *@param filename
+  *@return -1, 0, 1, 2, 3, 4, 5, 6, 7
+  */
 int fileSystemTests(char *filename){
      struct stat buff;
 
@@ -267,10 +237,33 @@ int fileSystemTests(char *filename){
      }
 }
 
+
+/**
+  *@biref printing path(s)
+  *@param path
+  *@return none
+  */
+
 void printPath(char* path){
 	printf("%s\n", path);
 
 }
 
 
-
+/**
+  *@brief manipulating input string for convenience
+  *@param s, c
+  *@return void
+  */
+void replaceStr(char* s, char* c){
+	for(int i=0; s[i] != '\0'; i++){
+		if(s[i] != *c){
+			continue;
+                }
+                if(strlen(s) != 1){
+			if(s[strlen(s) - 1] == *c){
+				s[strlen(s) -1] = '\0';
+                         }
+		}
+          }
+}

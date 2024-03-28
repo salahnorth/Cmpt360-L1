@@ -1,17 +1,22 @@
 #include<stdio.h>
 #include<unistd.h>
-#include<getopt.h>
 #include<string.h>
 #include<stdlib.h>
-#include "findme.h"
-#include <limits.h>
+#include<limits.h>
 #include<sys/stat.h>
 #include<sys/types.h>
 #include<pwd.h>
-#include <pthread.h>
+#include<pthread.h>
+#include"findme.h"
 
-void replaceStr(char*, char*);
 
+/**
+  *@file testfindme.c
+  *@brief This file runs the main program to find a specific file
+  *@author Salah Mohamed & Vy Tran
+  *@date 27032024
+  *@version 8
+  */
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         printf("Usage: %s <starting directory> [<options>]\n", argv[0]);
@@ -39,55 +44,44 @@ int main(int argc, char *argv[]) {
     int fType;
     
     int fileFlag = 0;
-    
     int findFlag = 0;
     
-    for (int i = 1; i < argc; i += 1) {
-    
-        if (argc <= 2) {
+    for (int i = 1; i < argc; i += 1){
+        if(argc <= 2){
      		path = ".";   
         	break;
-    }
-        if (strcmp(argv[i], "find") == 0) {
-
-	    if (argv[2][0] == '-'){
+	}
+        if(strcmp(argv[i], "find") == 0){
+	    if(argv[2][0] == '-'){
 	        path = ".";
 	        findFlag = 1;
 	 
 	    }
-	    else if ((argv[2][0] == '/' || argv[2][0] == '.')){  
+
+	    else if((argv[2][0] == '/' || argv[2][0] == '.')){  
                 path = argv[2];
             }
-           
-
-            else if (((argv[2][0] != '.' && argv[2][0] != '/')|| (argv[3][0] != '-')) && findFlag == 0) {
-
-                
+       
+            else if(((argv[2][0] != '.' && argv[2][0] != '/') || (argv[3][0] != '-')) && findFlag == 0){
                 fprintf(stderr, "Invalid argument to find.\n");
                 exit(EXIT_FAILURE);
-	}	
-            
-                
-        } else if (strcmp(argv[i], "-type") == 0) {
+	    }	
+        } 
+	else if(strcmp(argv[i], "-type") == 0){
             if (i+1 >= argc) {
-            
                 fprintf(stderr, "Invalid argument to -type.\n");
                 exit(EXIT_FAILURE);
             }
-            
             else{
                 filetype = argv[i+1];
             }
-            
-        } else if (strcmp(argv[i], "-name") == 0) {
-            if (i+1 >= argc) {
-            
+        }
+	else if(strcmp(argv[i], "-name") == 0){
+            if(i+1 >= argc){
                 fprintf(stderr, "Invalid argument to -name.\n");
                 exit(EXIT_FAILURE);
             }
-            
             else{
-            
                 filename = argv[i+1];
                 stat(path, &fileStat);
                 fType = get_fileType(path, filename);
@@ -97,18 +91,17 @@ int main(int argc, char *argv[]) {
                 }
             }
             
-        } else if (strcmp(argv[i], "-maxdepth") == 0) {
-            if (i+1 >= argc) {
-            
+        } 
+	else if(strcmp(argv[i], "-maxdepth") == 0){
+            if(i+1 >= argc){
                 fprintf(stderr, "Invalid argument to -maxdepth.\n");
                 exit(EXIT_FAILURE);
             }
-            
             else maxdepth = atoi(argv[i + 1]);
             
-        } else if (strcmp(argv[i], "-user") == 0) {
-            if (i+1 >= argc) {
-            
+        } 
+	else if(strcmp(argv[i], "-user") == 0){
+            if(i+1 >= argc){
                 fprintf(stderr, "Invalid argument to -user.\n");
                 exit(EXIT_FAILURE);
             }
@@ -150,7 +143,14 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-void replaceStr(char* s, char* c){
+
+/**
+  *@brief manipulating input string for convenience
+  *@param s, c
+  *@return void
+  */
+
+/*void replaceStr(char* s, char* c){
          int counter = 0;
          for(int i=0; s[i] != '\0'; i++){
                  printf("GOING IN FOR\n");
@@ -166,4 +166,4 @@ void replaceStr(char* s, char* c){
                  	
                  }
          }
-}
+}*/

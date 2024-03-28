@@ -2,8 +2,8 @@
   *@file findme.h
   *@brief Header File
   *@author Salah Mohamed & Vy Tran
-  *@date 
-  *@version 
+  *@date 27032024 
+  *@version 8
   */
 
 #ifndef FINDME_H
@@ -29,4 +29,7 @@ int findFile(char *path, int filetype,char* filename, char* username, int maxdep
 int get_fileType(char *path, char* filename);
 int fileSystemTests(char *filename);
 void printPath(char*);
+void replaceStr(char*, char*);
 #endif
+
+
