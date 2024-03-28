@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
      		path = ".";   
         	break;
 	}
-        if(strcmp(argv[i], "find") == 0){
+	if(strcmp(argv[i], "find") == 0){
 	    if(argv[2][0] == '-'){
 	        path = ".";
 	        findFlag = 1;
@@ -60,12 +60,17 @@ int main(int argc, char *argv[]) {
 
 	    else if((argv[2][0] == '/' || argv[2][0] == '.')){  
                 path = argv[2];
+		/*if(argv[3][0] != '-'){
+			fprintf(stderr, "Invalid argument to find.\n");
+			exit(EXIT_FAILURE);
+		}*/
+
             }
        
-            else if(((argv[2][0] != '.' && argv[2][0] != '/') || (argv[3][0] != '-')) && findFlag == 0){
+            else if(((argv[2][0] != '.' && argv[2][0] != '/') || argv[3][0] == '-') && findFlag == 0){
                 fprintf(stderr, "Invalid argument to find.\n");
                 exit(EXIT_FAILURE);
-	    }	
+	    }	    
         } 
 	else if(strcmp(argv[i], "-type") == 0){
             if (i+1 >= argc) {
@@ -108,6 +113,7 @@ int main(int argc, char *argv[]) {
             
             else username = argv[i + 1];
         }
+	
     }
     
         char c1 = '/';
