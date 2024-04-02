@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "c:/Users/salahmac/OneDrive/Desktop/CMPT360_Project/Cmpt360-L1/lab09",
-      "program": "c:/Users/salahmac/OneDrive/Desktop/CMPT360_Project/Cmpt360-L1/lab09/build/Debug/outDebug",
+      "cwd": "c:/Users/salahmac/OneDrive/Documents/Operating Systems/Cmpt360_git/Cmpt360-L1/lab10Salah",
+      "program": "c:/Users/salahmac/OneDrive/Documents/Operating Systems/Cmpt360_git/Cmpt360-L1/lab10Salah/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
